@@ -6,6 +6,8 @@ import pandas as pd
 
 class DTree:
 
+    # Do not use the constructor outside the scope of DTree. Use build_tree instead.
+
     def __init__(self, val: str, left: Union[Iterable["DTree"], pd.DataFrame],
                  right: Union[Iterable["DTree"], pd.DataFrame]):
         """
