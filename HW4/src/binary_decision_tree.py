@@ -20,63 +20,84 @@ class DTree:
         self.__left = left
         self.__right = right
 
-    def build_tree(self, df: pd.DataFrame, class_col: int, measure):
+    @classmethod
+    def build_tree(cls, train: pd.DataFrame, class_col: int, criterion,
+                   max_depth=None, min_instances=2, target_impurity=0.0):
         """
         Build a decision tree
-        :param df: the data to partition
+        :param target_impurity: the target impurity to stop building tree node
+        :param min_instances: the minimum instances to keep spliting
+        :param max_depth: the maximum depth of the tree
+        :param train: the data to partition
         :param class_col: the column containing the classes in df
-        :param measure: the measure function of impurity
+        :param criterion: the measure function of impurity
         :return: a decision tree
         """
-        best_col, best_v, best_meas = self.__best_split(df, class_col, measure)
-        df1, df2 = df[df[best_col] == best_v], df[df[best_col] != best_v]
 
-        # need to verify if impurity will become 0
-        # maybe also consider the depth of the decision tree
-        if best_meas == 0:
-            self.__left = df1
-            self.__right = df2
-        else:
-            self.__left = self.build_tree(df1, class_col, measure)
-            self.__right = self.build_tree(df2, class_col, measure)
-        return self
+        best_col, best_v, best_meas = cls.best_split(train, class_col, criterion)
+
+        if len(train) <= min_instances or max_depth == 0 or best_meas <= target_impurity:
+            return train
+
+        df1, df2 = train[train[best_col] == best_v], train[train[best_col] != best_v]
+
+        max_depth = max_depth - 1 if max_depth is not None else max_depth
+
+        root = DTree(
+            val=best_v,
+            left=cls.build_tree(
+                df1, class_col, criterion, max_depth - 1,
+                min_instances, target_impurity
+            ),
+            right=cls.build_tree(
+                df2, class_col, criterion, max_depth - 1,
+                min_instances, target_impurity
+            )
+        )
+
+        return root
 
     ########### Private methods ###########
 
-    def __total(self, cnt: dict):
+    @classmethod
+    def total(cls, cnt: dict):
         return sum(cnt.values())
 
-    def __wavg(self, cnt1: dict, cnt2: dict, measure):
-        tot1 = self.__total(cnt1)
-        tot2 = self.__total(cnt2)
+    @classmethod
+    def wavg(cls, cnt1: dict, cnt2: dict, measure):
+        tot1 = cls.total(cnt1)
+        tot2 = cls.total(cnt2)
         tot = tot1 + tot2
         return (measure(cnt1) * tot1 + measure(cnt2) * tot2) / tot
 
-    def __evaluate_split(self, df: pd.DataFrame, class_col: int, split_col: int, feature_val: any, measure):
+    @classmethod
+    def evaluate_split(cls, df: pd.DataFrame, class_col: int, split_col: int, feature_val: any, measure):
         """ Evaluate a partition / split based on a specific column and a feature value """
         df1, df2 = df[df[split_col] == feature_val], df[df[split_col] != feature_val]
         cnt1, cnt2 = Counter(df1[class_col]), Counter(df2[class_col])
-        return wavg(cnt1, cnt2, measure)
+        return cls.wavg(cnt1, cnt2, measure)
 
-    def __best_split_for_column(self, df: pd.DataFrame, class_col: int, split_col: int, measure):
+    @classmethod
+    def best_split_for_column(cls, df: pd.DataFrame, class_col: int, split_col: int, measure):
         """ Find the best split for a given column """
         best_v = ""
         best_meas = float("inf")
         for v in set(df[split_col]):
-            meas = self.__evaluate_split(df, class_col, split_col, v, measure)
+            meas = cls.evaluate_split(df, class_col, split_col, v, measure)
             if meas < best_meas:
                 best_v = v
                 best_meas = meas
         return best_v, best_meas
 
-    def __best_split(self, df: pd.DataFrame, class_col: int, measure):
+    @classmethod
+    def best_split(cls, df: pd.DataFrame, class_col: int, measure):
         """ Find the best split in a df """
         best_col = 0
         best_v = ""
         best_meas = float("inf")
         for split_col in df.columns:
             if split_col != class_col:
-                v, meas = self.__best_split_for_column(df, class_col, split_col, measure)
+                v, meas = cls.best_split_for_column(df, class_col, split_col, measure)
                 if meas < best_meas:
                     best_v = v
                     best_meas = meas
