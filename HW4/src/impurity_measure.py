@@ -1,9 +1,11 @@
 from math import log2
+from collections import Counter
 
-def gini(self, cnt: dict):
+def gini(cnt: Counter):
     """ 1 - sum(p^2) """
-    return 1 - sum([(v / self.__total(cnt)) ** 2 for v in cnt.values()])
+    return 1 - sum([(v / sum(cnt.values())) ** 2 for v in cnt.values()])
 
-def entropy(self, cnt: dict):
-    tot = self.__total(cnt)
+
+def entropy(cnt: Counter):
+    tot = sum(cnt.values())
     return -sum([(v / tot) * log2(v / tot) for v in cnt.values()])
