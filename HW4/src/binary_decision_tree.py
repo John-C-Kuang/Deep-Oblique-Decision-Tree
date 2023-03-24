@@ -12,9 +12,9 @@ class DTree:
                  right: Union[Iterable["DTree"], pd.DataFrame]):
         """
         A Binary Tree
-        :param val: the value of the node
-        :param left: the data on the left branch
-        :param right: the data on the right branch
+        @param val: the value of the node
+        @param left: the data on the left branch
+        @param right: the data on the right branch
         """
         self.val = val
         self.__left = left
@@ -25,13 +25,13 @@ class DTree:
                    max_depth=None, min_instances=2, target_impurity=0.0):
         """
         Build a decision tree
-        :param target_impurity: the target impurity to stop building tree node
-        :param min_instances: the minimum instances to keep spliting
-        :param max_depth: the maximum depth of the tree
-        :param train: the data to partition
-        :param class_col: the column containing the classes in df
-        :param criterion: the measure function of impurity
-        :return: a decision tree
+        @param target_impurity: the target impurity to stop building tree node
+        @param min_instances: the minimum instances to keep spliting
+        @param max_depth: the maximum depth of the tree
+        @param train: the data to partition
+        @param class_col: the column containing the classes in df
+        @param criterion: the measure function of impurity
+        @return: a decision tree
         """
 
         best_col, best_v, best_meas = cls.best_split(train, class_col, criterion)
