@@ -227,6 +227,12 @@ def gini(cls: Counter):
 
 
 def entropy(cls: Counter):
+    """
+    Calculates Entropy of the class labels.
+
+    @param cls: frequency counter of the class labels
+    @return: calculated Entropy of the current split.
+    """
     tot = sum(cls.values())
     return -sum([(_ / tot) * np.log(_ / tot) for _ in cls.values()])
 
