@@ -230,7 +230,7 @@ class _DTreeNode:
         @return: flag indicates if the column is discrete and the value to be split on.
         """
         unique_val = set(train[split_col])
-        discrete = isinstance(train[split_col].dtype, str) or len(unique_val) < discrete_threshold
+        discrete = train[split_col].dtype == 'object' or len(unique_val) < discrete_threshold
         best_val = None
         best_imp = float('inf')
 
