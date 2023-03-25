@@ -105,6 +105,7 @@ class _DTreeNode:
         self.val = val
         self._left = left
         self._right = right
+        self.cls = cls
 
     @classmethod
     def build_tree(cls, train: pd.DataFrame, label_col: str,
@@ -172,6 +173,21 @@ class _DTreeNode:
                                                impurity_func=impurity_func,
                                                target_impurity=target_impurity)
                           )
+
+    def predict(self, feature: Union[pd.Series, dict]) -> Any:
+        if self._left is None and self._right is None:
+            return self.cls
+
+        if self.discrete_flag:
+            if feature[self.header] == self.val:
+                return self._left.predict(feature)
+            else:
+                return self._right.predict(feature)
+        else:
+            if feature[self.header] <= self.val:
+                return self._left.predict(feature)
+            else:
+                return self._right.predict(feature)
 
     @classmethod
     def _best_split(cls, train: pd.DataFrame, label_col: str, discrete_threshold: int, impurity_func: Callable) \
@@ -301,4 +317,26 @@ class DecisionTree:
         self.root = None
 
     def train(self):
-        return
+        """
+        Build a complete decision tree with given hyperparameters.
+
+        @return: None
+        """
+        self.root = _DTreeNode.build_tree(self.train, self.label_col,
+                                          discrete_threshold=self.discrete_threshold,
+                                          max_depth=self.max_depth,
+                                          min_instances=self.min_instances,
+                                          target_impurity=self.target_impurity,
+                                          impurity_func=self.impurity_func)
+
+    def predict(self, feature: Union[pd.Series, dict]) -> Any:
+        """
+        Predicts the class label of the given feature vector.
+
+        @param feature: feature vector with its keys and values.
+        @return: predicted class label of the feature vector.
+        """
+        if self.root is None:
+            raise "Decision Tree instance has not been trained"
+
+        return self.root.predict(feature)
