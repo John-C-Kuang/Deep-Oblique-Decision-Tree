@@ -129,7 +129,8 @@ class _DTreeNode:
         @param build_cls: flag indicates if the tree has reach terminate condition.
         @return: built binary decision tree.
         """
-        if len(train) <= min_instances or (max_depth is not None and max_depth <= 0) or build_cls:
+        if len(train) <= min_instances or (max_depth is not None and max_depth <= 0) \
+                or train[label_col].nunique() == 1 or build_cls:
             target_cls = Counter(train[label_col]).most_common(1)[0][0]
             return _DTreeNode(label_col, True, None, cls=target_cls, left=None, right=None)
 
@@ -284,7 +285,7 @@ class _DTreeNode:
 class DecisionTree:
     def __init__(self,
                  *,
-                 discrete_threshold: int = 0,
+                 discrete_threshold: int = 10,
                  max_depth: int = None,
                  min_instances: int = 2,
                  impurity_func: Callable,
