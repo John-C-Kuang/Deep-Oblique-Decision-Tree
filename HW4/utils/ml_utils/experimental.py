@@ -339,6 +339,4 @@ class DecisionTree:
         if self.root is None:
             raise "Decision Tree instance has not been trained"
 
-        if isinstance(feature, pd.Series):
-            feature = feature.iloc[0].to_dict()
         return self.root.predict(feature)
