@@ -129,8 +129,6 @@ class _DTreeNode:
         @param build_cls: flag indicates if the tree has reach terminate condition.
         @return: built binary decision tree.
         """
-        root = _DTreeNode('', True, None, left=None, right=None)
-
         if len(train) <= min_instances or max_depth <= 0 or build_cls:
             target_cls = Counter(train[label_col]).most_common(1)[0][0]
             return _DTreeNode(label_col, True, None, cls=target_cls, left=None, right=None)
