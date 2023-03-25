@@ -318,6 +318,9 @@ class DecisionTree:
         @param label_col: name of the column containing the labels.
         @return: None
         """
+        if label_col not in train:
+            raise ValueError('Header of label column not presented in dataset')
+
         self.root = _DTreeNode.build_tree(train, label_col,
                                           discrete_threshold=self.discrete_threshold,
                                           max_depth=self.max_depth,
