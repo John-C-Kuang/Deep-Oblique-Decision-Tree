@@ -135,11 +135,11 @@ class _DTreeNode:
 
         best_col, discrete, best_val, best_imp = cls._best_split(train, label_col, discrete_threshold, impurity_func)
         if discrete:
-            split0 = train[train[best_col] == best_col]
-            split1 = train[train[best_col] != best_col]
+            split0 = train[train[best_col] == best_val]
+            split1 = train[train[best_col] != best_val]
         else:
-            split0 = train[train[best_col] <= best_col]
-            split1 = train[train[best_col] > best_col]
+            split0 = train[train[best_col] <= best_val]
+            split1 = train[train[best_col] > best_val]
 
         if best_imp <= target_impurity:
             return _DTreeNode(best_col, discrete, best_val,
@@ -278,7 +278,7 @@ class _DTreeNode:
         tot0 = sum(cnt0.values())
         tot1 = sum(cnt1.values())
         tot = tot0 + tot1
-        return (impurity_func(cnt0) * cnt0 + impurity_func(cnt1) * tot1) / tot
+        return (impurity_func(cnt0) * tot0 + impurity_func(cnt1) * tot1) / tot
 
 
 class DecisionTree:
