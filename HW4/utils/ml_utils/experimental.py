@@ -173,7 +173,7 @@ class _DTreeNode:
                                                target_impurity=target_impurity)
                           )
 
-    def predict(self, feature: Union[pd.Series, dict]) -> Any:
+    def predict(self, feature: dict) -> Any:
         if self._left is None and self._right is None:
             return self.cls
 
@@ -339,4 +339,6 @@ class DecisionTree:
         if self.root is None:
             raise "Decision Tree instance has not been trained"
 
+        if isinstance(feature, pd.Series):
+            feature = feature.iloc[0].to_dict()
         return self.root.predict(feature)
