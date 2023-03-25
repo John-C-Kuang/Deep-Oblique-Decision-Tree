@@ -284,7 +284,7 @@ class _DTreeNode:
 
 
 class DecisionTree:
-    def __init__(self, train: pd.DataFrame, label_col: str,
+    def __init__(self,
                  *,
                  discrete_threshold: int = 0,
                  max_depth: int = None,
@@ -294,16 +294,12 @@ class DecisionTree:
         """
         Constructor for a stateful decision tree builder instance.
 
-        @param train: training dataset to be split on.
-        @param label_col: name of the column containing the labels.
         @param discrete_threshold: number of unique values to determine if the column values are discrete.
         @param max_depth: maximum depth of the decision tree.
         @param min_instances: minimum number of instances within the dataset to terminate splitting.
         @param impurity_func: function for measuring the dataset impurity.
         @param target_impurity: target impurity to terminate splitting.
         """
-        self.train = train
-        self.label_col = label_col
         self.discrete_threshold = discrete_threshold
         if max_depth is not None and max_depth < 0:
             raise ValueError('Maximum depth must not be negative')
@@ -316,13 +312,15 @@ class DecisionTree:
 
         self.root = None
 
-    def train(self):
+    def train(self, train: pd.DataFrame, label_col: str):
         """
-        Build a complete decision tree with given hyperparameters.
+        Builds a complete decision tree with given hyperparameters.
 
+        @param train: training dataset to be split on.
+        @param label_col: name of the column containing the labels.
         @return: None
         """
-        self.root = _DTreeNode.build_tree(self.train, self.label_col,
+        self.root = _DTreeNode.build_tree(train, label_col,
                                           discrete_threshold=self.discrete_threshold,
                                           max_depth=self.max_depth,
                                           min_instances=self.min_instances,
