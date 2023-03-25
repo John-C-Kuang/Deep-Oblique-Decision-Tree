@@ -100,7 +100,7 @@ class _DTreeNode:
         @param left: decision tree connected to the left branch
         @param right: decision tree connected to the right branch
         """
-        self.header = header,
+        self.header = header
         self.discrete_flag = discrete_flag
         self.val = val
         self._left = left
