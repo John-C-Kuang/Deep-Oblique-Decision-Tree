@@ -184,7 +184,7 @@ class _DTreeNode:
             else:
                 return self._right.predict(feature)
         else:
-            if feature[self.header] <= self.val:
+            if self.val - feature[self.header] >= 1e-6:
                 return self._left.predict(feature)
             else:
                 return self._right.predict(feature)
