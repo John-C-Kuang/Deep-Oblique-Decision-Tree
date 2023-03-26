@@ -258,8 +258,8 @@ class _DTreeNode:
             split0 = train[train[split_col] == split_val]
             split1 = train[train[split_col] != split_val]
         else:
-            split0 = train[train[split_col] <= split_val]
-            split1 = train[train[split_col] > split_val]
+            split0 = train[split_val - train[split_col] >= 1e-6]
+            split1 = train[split_val - train[split_col] < 1e-6]
 
         cnt0 = Counter(split0[label_col])
         cnt1 = Counter(split1[label_col])
