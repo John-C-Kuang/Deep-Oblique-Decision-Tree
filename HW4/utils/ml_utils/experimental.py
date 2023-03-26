@@ -140,8 +140,8 @@ class _DTreeNode:
             split0 = train[train[best_col] == best_val]
             split1 = train[train[best_col] != best_val]
         else:
-            split0 = train[train[best_col] <= best_val]
-            split1 = train[train[best_col] > best_val]
+            split0 = train[best_val - train[best_col] >= 1e-6]
+            split1 = train[best_val - train[best_col] < 1e-6]
 
         if best_imp <= target_impurity:
             return _DTreeNode(best_col, discrete, best_val,
