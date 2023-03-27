@@ -110,7 +110,7 @@ class _DTreeNode:
     @classmethod
     def build_tree(cls, train: pd.DataFrame, label_col: str,
                    *,
-                   discrete_threshold: int,
+                   discrete_dict: dict[str, bool],
                    max_depth: int = None,
                    min_instances: int,
                    impurity_func: Callable = None,
@@ -121,7 +121,7 @@ class _DTreeNode:
 
         @param train: target dataset to be split on.
         @param label_col: column containing the class labels.
-        @param discrete_threshold: number of unique values to determine if the column values are discrete.
+        @param discrete_dict: dictionary stores the information of column values being discrete or not.
         @param max_depth: maximum depth of the decision tree.
         @param min_instances: minimum number of instances within the dataset to terminate splitting.
         @param impurity_func: function of the impurity measure.
@@ -134,13 +134,14 @@ class _DTreeNode:
             target_cls = Counter(train[label_col]).most_common(1)[0][0]
             return _DTreeNode(label_col, True, None, cls=target_cls, left=None, right=None)
 
-        best_col, discrete, best_val, best_imp = cls._best_split(train, label_col, discrete_threshold, impurity_func)
+        best_col, best_val, best_imp = cls._best_split(train, label_col, discrete_dict, impurity_func)
+        discrete = discrete_dict[best_col]
         if discrete:
             split0 = train[train[best_col] == best_val]
             split1 = train[train[best_col] != best_val]
         else:
-            split0 = train[train[best_col] <= best_val]
-            split1 = train[train[best_col] > best_val]
+            split0 = train[best_val - train[best_col] >= 1e-6]
+            split1 = train[best_val - train[best_col] < 1e-6]
 
         if len(split0) == 0 or len(split1) == 0:
             raise RuntimeError('Found duplicate feature vectors within the dataset but with different labels')
@@ -149,12 +150,12 @@ class _DTreeNode:
             return _DTreeNode(best_col, discrete, best_val,
                               left=cls.build_tree(split0, label_col,
                                                   build_cls=True,
-                                                  discrete_threshold=discrete_threshold,
+                                                  discrete_dict=discrete_dict,
                                                   min_instances=min_instances,
                                                   target_impurity=target_impurity),
                               right=cls.build_tree(split1, label_col,
                                                    build_cls=True,
-                                                   discrete_threshold=discrete_threshold,
+                                                   discrete_dict=discrete_dict,
                                                    min_instances=min_instances,
                                                    target_impurity=target_impurity)
                               )
@@ -163,13 +164,13 @@ class _DTreeNode:
 
         return _DTreeNode(best_col, discrete, best_val,
                           left=cls.build_tree(split0, label_col,
-                                              discrete_threshold=discrete_threshold,
+                                              discrete_dict=discrete_dict,
                                               max_depth=max_depth,
                                               min_instances=min_instances,
                                               impurity_func=impurity_func,
                                               target_impurity=target_impurity),
                           right=cls.build_tree(split1, label_col,
-                                               discrete_threshold=discrete_threshold,
+                                               discrete_dict=discrete_dict,
                                                max_depth=max_depth,
                                                min_instances=min_instances,
                                                impurity_func=impurity_func,
@@ -186,53 +187,51 @@ class _DTreeNode:
             else:
                 return self._right.predict(feature)
         else:
-            if feature[self.header] <= self.val:
+            if self.val - feature[self.header] >= 1e-6:
                 return self._left.predict(feature)
             else:
                 return self._right.predict(feature)
 
     @classmethod
-    def _best_split(cls, train: pd.DataFrame, label_col: str, discrete_threshold: int, impurity_func: Callable) \
+    def _best_split(cls, train: pd.DataFrame, label_col: str, discrete_dict: dict[str, bool], impurity_func: Callable) \
             -> (str, bool, Any, float):
         """
         Finds the best split within the current dataset.
 
         @param train: target dataset to be split on.
         @param label_col: column containing the class labels.
-        @param discrete_threshold: number of unique values to determine if the column values are discrete.
+        @param discrete_dict: dictionary stores the information of column values being discrete or not.
         @param impurity_func: function of the impurity measure.
         @return: column name of the best split, flag indicates if the column is discrete and the value to be split on.
         """
         best_col = None
         best_val = None
         best_imp = float('inf')
-        discrete = None
         for split_col in train.columns:
             if split_col != label_col:
-                flag, v, imp = cls._best_split_for_col(train, label_col, discrete_threshold, split_col, impurity_func)
+                v, imp = cls._best_split_for_col(train, label_col, discrete_dict, split_col, impurity_func)
                 if imp < best_imp:
                     best_col = split_col
                     best_val = v
                     best_imp = imp
-                    discrete = flag
 
-        return best_col, discrete, best_val, best_imp
+        return best_col, best_val, best_imp
 
     @classmethod
-    def _best_split_for_col(cls, train: pd.DataFrame, label_col: str, discrete_threshold: int, split_col: str,
+    def _best_split_for_col(cls, train: pd.DataFrame, label_col: str, discrete_dict: dict[str, bool], split_col: str,
                             impurity_func: Callable) -> (bool, Any, float):
         """
         Finds the best split within the given column.
 
         @param train: target dataset to be split on.
         @param label_col: column containing the class labels.
-        @param discrete_threshold: number of unique values to determine if the column values are discrete.
+        @param discrete_dict: dictionary stores the information of column values being discrete or not.
         @param split_col: header of the column to be split on.
         @param impurity_func: function of the impurity measure.
         @return: flag indicates if the column is discrete and the value to be split on.
         """
         unique_val = set(train[split_col])
-        discrete = train[split_col].dtype == 'object' or len(unique_val) < discrete_threshold
+        discrete = discrete_dict[split_col]
         best_val = None
         best_imp = float('inf')
 
@@ -242,7 +241,7 @@ class _DTreeNode:
                 best_val = v
                 best_imp = imp
 
-        return discrete, best_val, best_imp
+        return best_val, best_imp
 
     @classmethod
     def _evaluate_split(cls, train: pd.DataFrame, label_col: str, split_col: str, discrete_flag: bool,
@@ -262,8 +261,8 @@ class _DTreeNode:
             split0 = train[train[split_col] == split_val]
             split1 = train[train[split_col] != split_val]
         else:
-            split0 = train[train[split_col] <= split_val]
-            split1 = train[train[split_col] > split_val]
+            split0 = train[split_val - train[split_col] >= 1e-6]
+            split1 = train[split_val - train[split_col] < 1e-6]
 
         cnt0 = Counter(split0[label_col])
         cnt1 = Counter(split1[label_col])
@@ -325,8 +324,12 @@ class DecisionTree:
         if label_col not in train:
             raise ValueError('Header of label column not presented in dataset')
 
+        discrete_dict = {}
+        for _ in train.columns:
+            discrete_dict[_] = train[_].dtype == 'object' or len(set(train[_])) <= self.discrete_threshold
+
         self.root = _DTreeNode.build_tree(train, label_col,
-                                          discrete_threshold=self.discrete_threshold,
+                                          discrete_dict=discrete_dict,
                                           max_depth=self.max_depth,
                                           min_instances=self.min_instances,
                                           target_impurity=self.target_impurity,
@@ -340,6 +343,6 @@ class DecisionTree:
         @return: predicted class label of the feature vector.
         """
         if self.root is None:
-            raise RuntimeError("Decision Tree instance has not been trained")
+            raise "Decision Tree instance has not been trained"
 
         return self.root.predict(feature)
