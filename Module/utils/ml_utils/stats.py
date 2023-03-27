@@ -12,9 +12,9 @@ class NaiveBayes:
         """
         Constructor for a stateful Naive Bayes instance.
 
-        :param cls_counters: list of Counter of class features.
-        :param cls_occur: list of int of class occurrences.
-        :param cls_sum: list of int for number of total class features.
+        @param cls_counters: list of Counter of class features.
+        @param cls_occur: list of int of class occurrences.
+        @param cls_sum: list of int for number of total class features.
         """
         if cls_sum is None:
             cls_sum = [sum(_.values()) for _ in cls_counters]
@@ -34,15 +34,15 @@ class NaiveBayes:
         """
         Calculates the Naive Bayes Log Scores on the given sentence.
 
-        :param text: sentence to be predicted.
-        :param lower: boolean flag for converting all words to lower case.
-        :param filter_len: words with length less than or equal to be removed.
-        :param filter_words: list of words to be filtered out.
-        :param remove_repetitive: boolean flag for removing repetitive words in each sentence.
-        :param remove_punc: boolean flag for removing punctuations.
-        :param remove_num: boolean flag for removing numeric values.
-        :param safety_factor: minimal value to prevent divided by 0 warning.
-        :return: array of calculated Naive Bayes Log Scores corresponding to each class.
+        @param text: sentence to be predicted.
+        @param lower: boolean flag for converting all words to lower case.
+        @param filter_len: words with length less than or equal to be removed.
+        @param filter_words: list of words to be filtered out.
+        @param remove_repetitive: boolean flag for removing repetitive words in each sentence.
+        @param remove_punc: boolean flag for removing punctuations.
+        @param remove_num: boolean flag for removing numeric values.
+        @param safety_factor: minimal value to prevent divided by 0 warning.
+        @return: array of calculated Naive Bayes Log Scores corresponding to each class.
         """
         # string preprocess
         if lower:
