@@ -9,8 +9,8 @@ def set_framework(framework: str) -> None:
     """
     Sets the input data library handler for supported frameworks.
 
-    :param framework: string indicator of the target framework.
-    :return: None
+    @param framework: string indicator of the target framework.
+    @return: None
     """
     key = framework.lower()
     if key not in supported_frameworks:
@@ -22,7 +22,7 @@ def numpy() -> None:
     """
     Macro for setting the input data framework using NumPy.
 
-    :return: None
+    @return: None
     """
     set_framework('numpy')
 
@@ -31,6 +31,6 @@ def pandas() -> None:
     """
     Macro for setting the input data framework using Pandas
 
-    :return: None
+    @return: None
     """
     set_framework('pandas')

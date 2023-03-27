@@ -15,14 +15,14 @@ class Vectorization:
         """
         Constructor for a stateful Vectorization instance.
 
-        :param lower: boolean flag for converting all words to lower case.
-        :param top_k: number of features to be selected with the highest frequencies.
-        :param internal: precomputed vocabulary list to be stored.
-        :param filter_words: list of words to be filtered out.
-        :param remove_repetitive: boolean flag for removing repetitive words in each sentence.
-        :param filter_punc: boolean flag for removing punctuations.
-        :param filter_num: boolean flag for removing numeric values.
-        :param filter_len: words with length less than or equal to be removed.
+        @param lower: boolean flag for converting all words to lower case.
+        @param top_k: number of features to be selected with the highest frequencies.
+        @param internal: precomputed vocabulary list to be stored.
+        @param filter_words: list of words to be filtered out.
+        @param remove_repetitive: boolean flag for removing repetitive words in each sentence.
+        @param filter_punc: boolean flag for removing punctuations.
+        @param filter_num: boolean flag for removing numeric values.
+        @param filter_len: words with length less than or equal to be removed.
         """
         self.vocab_list = internal
         self.word_list = None
@@ -61,8 +61,8 @@ class Vectorization:
         """
         Fits the vocabulary list and word list for Vectorization on given series.
 
-        :param series: series of sentences to extract vocabularies on.
-        :return: None
+        @param series: series of sentences to extract vocabularies on.
+        @return: None
         """
         if self.remove_repetitive:
             if self.lower:
@@ -88,9 +88,9 @@ class Vectorization:
         """
         Fits the vocabulary list and word list for Vectorization on given sentence.
 
-        :param text: sentence to extract vocabularies on.
-        :param _class_call: internal flag indicates if called as a helper function.
-        :return: None
+        @param text: sentence to extract vocabularies on.
+        @param _class_call: internal flag indicates if called as a helper function.
+        @return: None
         """
         if not _class_call:
             if self.lower:
@@ -110,8 +110,8 @@ class Vectorization:
         """
         Sets the top k value for the instance and updates the selected word list.
 
-        :param k: number of words selected with the highest frequencies.
-        :return: None
+        @param k: number of words selected with the highest frequencies.
+        @return: None
         """
         if self.vocab_list is not None:
             if k < 0:
@@ -125,9 +125,9 @@ class Vectorization:
         """
         Vectorize the given sentence with selected word list.
 
-        :param text: sentence to be vectorized.
-        :param use_frequency: boolean flag for vectorizing using frequency.
-        :return: vectorized feature vector.
+        @param text: sentence to be vectorized.
+        @param use_frequency: boolean flag for vectorizing using frequency.
+        @return: vectorized feature vector.
         """
         text = text.split()
         if use_frequency:

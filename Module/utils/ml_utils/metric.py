@@ -12,9 +12,9 @@ def mse(actual: Union[pd.Series, np.ndarray], pred: Union[pd.Series, np.ndarray]
     """
     Calculates the Mean Squared Error for actual and prediction values.
 
-    :param actual: sequence of actual values of the dataset.
-    :param pred: sequence of predicted values of the dataset.
-    :return: calculated Mean Squared Error of the predictions.
+    @param actual: sequence of actual values of the dataset.
+    @param pred: sequence of predicted values of the dataset.
+    @return: calculated Mean Squared Error of the predictions.
     """
     if ml_utils.framework == 'numpy':
         actual: np.ndarray
@@ -39,9 +39,9 @@ def mae(actual: Union[pd.Series, np.ndarray], pred: Union[pd.Series, np.ndarray]
     """
     Calculates the Mean Absolute Error for actual and prediction values.
 
-    :param actual: sequence of actual values of the dataset.
-    :param pred: sequence of predicted values of the dataset.
-    :return: calculated Mean Absolute Error of the predictions.
+    @param actual: sequence of actual values of the dataset.
+    @param pred: sequence of predicted values of the dataset.
+    @return: calculated Mean Absolute Error of the predictions.
     """
     if len(actual) != len(pred):
         raise ValueError('Sequences of actual and predicted values must have same length')
@@ -69,9 +69,9 @@ def confusion_matrix(y, y_pred) -> np.ndarray:
     """
     Generates the Confusion Matrix for actual and prediction labels.
 
-    :param y: sequence of actual class labels.
-    :param y_pred: sequence of predicted class labels.
-    :return: generated Confusion Matrix of the predictions.
+    @param y: sequence of actual class labels.
+    @param y_pred: sequence of predicted class labels.
+    @return: generated Confusion Matrix of the predictions.
     """
     unique_classes = set(y) | set(y_pred)
     n_classes = len(unique_classes)
@@ -92,10 +92,10 @@ def metrics(y: Union[pd.Series, np.ndarray], y_pred: Union[pd.Series, np.ndarray
     Calculates the Metrics evaluating accuracy, sensitivity, specificity, precision and F-1 score for actual and
     prediction labels.
 
-    :param y: sequence of actual class labels.
-    :param y_pred: sequence of predicted class labels.
-    :param safe_factor: minimal value to prevent divided by 0 warning.
-    :return: dictionary of metric names as key with corresponding metric values.
+    @param y: sequence of actual class labels.
+    @param y_pred: sequence of predicted class labels.
+    @param safe_factor: minimal value to prevent divided by 0 warning.
+    @return: dictionary of metric names as key with corresponding metric values.
     """
     if len(y) != len(y_pred):
         raise ValueError('Sequences of actual and predicted values must have same length')
@@ -142,10 +142,10 @@ def mpe(actual: Union[pd.Series, np.ndarray], score: Union[pd.Series, np.ndarray
     """
     Calculates the Mean Perceptron Error for actual and prediction labels.
 
-    :param actual: sequence of actual class labels.
-    :param score: sequence of scores calculated during prediction.
-    :param pred: sequence of predicted class labels.
-    :return: calculated Mean Perceptron Error of the predictions.
+    @param actual: sequence of actual class labels.
+    @param score: sequence of scores calculated during prediction.
+    @param pred: sequence of predicted class labels.
+    @return: calculated Mean Perceptron Error of the predictions.
     """
     if len(actual) != len(pred):
         raise ValueError('Sequences of actual and predicted values must have same length')
@@ -173,12 +173,12 @@ def phi(positive: Counter, summary: Counter, total_pos: int, total_sum: int, key
     """
     Calculates the Phi Coefficient for given key correlates with the positive class.
 
-    :param positive: frequency counter for all features associate with positive label.
-    :param summary: summary frequency counter for all features.
-    :param total_pos: number of occurrences of positive labels.
-    :param total_sum: number of all occurrences.
-    :param key: target feature for calculating correlation.
-    :return: calculated Phi Coefficient of target feature associated with positive label.
+    @param positive: frequency counter for all features associate with positive label.
+    @param summary: summary frequency counter for all features.
+    @param total_pos: number of occurrences of positive labels.
+    @param total_sum: number of all occurrences.
+    @param key: target feature for calculating correlation.
+    @return: calculated Phi Coefficient of target feature associated with positive label.
     """
 
     pos_1 = positive[key]
@@ -196,10 +196,10 @@ def cos_sim(x: Union[Sequence, np.ndarray], y: Union[Sequence, np.ndarray],
     """
     Calculates Cosine Similarities of two 1-D feature vectors with same length.
 
-    :param x: feature vector sequence with shape (N, ).
-    :param y: feature vector sequence with shape (N, ).
-    :param safety_factor: minimal value to prevent divided by 0 warning.
-    :return: calculated Cosine Similarity of two feature vectors.
+    @param x: feature vector sequence with shape (N, ).
+    @param y: feature vector sequence with shape (N, ).
+    @param safety_factor: minimal value to prevent divided by 0 warning.
+    @return: calculated Cosine Similarity of two feature vectors.
     """
     if isinstance(x, Sequence):
         x = np.array(x)
@@ -216,9 +216,32 @@ def cos_sim(x: Union[Sequence, np.ndarray], y: Union[Sequence, np.ndarray],
     return np.dot(x, y) / (abs_x * abs_y + safety_factor)
 
 
+def gini(cls: Counter):
+    """
+    Calculates Gini Index of the class labels.
+
+    @param cls: frequency counter of the class labels.
+    @return: calculated Gini Index of the current split.
+    """
+    return 1 - sum([(_ / sum(cls.values())) ** 2 for _ in cls.values()])
+
+
+def entropy(cls: Counter):
+    """
+    Calculates Entropy of the class labels.
+
+    @param cls: frequency counter of the class labels
+    @return: calculated Entropy of the current split.
+    """
+    tot = sum(cls.values())
+    return -sum([(_ / tot) * np.log(_ / tot) for _ in cls.values()])
+
+
 # aliases
 MeanSquaredError = mse
 MeanAbsoluteError = mae
 MeanPerceptronError = mpe
 PhiCoefficient = phi
 CosineSimilarity = cos_sim
+GiniIndex = gini
+Entropy = entropy

@@ -16,17 +16,17 @@ def random_step(arr_size: Union[int, Sequence], num_epochs: int,
     """
     Trains the model with given size of parameters using Random Step algorithm.
 
-    :param arr_size: shape of the training parameters to be initialized.
-    :param num_epochs: number of training epochs.
-    :param init_min: minimum value for parameter initialization.
-    :param init_max: maximum value for parameter initialization.
-    :param step_min: minimum value of random step taken.
-    :param step_max: maximum value of random step taken.
-    :param x: sequence of training data.
-    :param y: sequence of training labels.
-    :param pred_func: prediction function takes in `x` and array of parameters.
-    :param loss_func: loss function takes in actual and predicted values.
-    :return: dictionary of training results and training history.
+    @param arr_size: shape of the training parameters to be initialized.
+    @param num_epochs: number of training epochs.
+    @param init_min: minimum value for parameter initialization.
+    @param init_max: maximum value for parameter initialization.
+    @param step_min: minimum value of random step taken.
+    @param step_max: maximum value of random step taken.
+    @param x: sequence of training data.
+    @param y: sequence of training labels.
+    @param pred_func: prediction function takes in `x` and array of parameters.
+    @param loss_func: loss function takes in actual and predicted values.
+    @return: dictionary of training results and training history.
     """
     if ml_utils.framework == 'pandas':
         x = x.to_numpy()
@@ -80,16 +80,16 @@ def gradient_descent(arr_size: Union[int, Sequence], num_epochs: int,
     """
     Train the model with given size of parameters using Gradient Descent algorithm.
 
-    :param arr_size: shape of the training parameters to be initialized.
-    :param num_epochs: number of training epochs.
-    :param init_min: minimum value for parameter initialization.
-    :param init_max: maximum value for parameter initialization.
-    :param learning_rate: learning rate at each epoch.
-    :param x: sequence of training data.
-    :param y: sequence of training labels.
-    :param pred_func: prediction function takes in `x` and array of parameters.
-    :param grad_func: gradient function takes in `x`, `y` and prediction values.
-    :return: dictionary of training results and training history.
+    @param arr_size: shape of the training parameters to be initialized.
+    @param num_epochs: number of training epochs.
+    @param init_min: minimum value for parameter initialization.
+    @param init_max: maximum value for parameter initialization.
+    @param learning_rate: learning rate at each epoch.
+    @param x: sequence of training data.
+    @param y: sequence of training labels.
+    @param pred_func: prediction function takes in `x` and array of parameters.
+    @param grad_func: gradient function takes in `x`, `y` and prediction values.
+    @return: dictionary of training results and training history.
     """
     if ml_utils.framework == 'pandas':
         x = x.to_numpy()
@@ -125,14 +125,14 @@ def perceptron(data: Union[pd.Series, np.ndarray],
     """
     Train the model with basic Perceptron algorithm.
 
-    :param data: sequence of all data with the last column as class labels.
-    :param learning_rate: learning rate at each epoch.
-    :param num_epochs: number of training epochs.
-    :param pred_func: prediction function takes in `x` and array of parameters, returns a dictionary with keys for
+    @param data: sequence of all data with the last column as class labels.
+    @param learning_rate: learning rate at each epoch.
+    @param num_epochs: number of training epochs.
+    @param pred_func: prediction function takes in `x` and array of parameters, returns a dictionary with keys for
     computed `score` and predicted labels `pred`.
-    :param grad_func: gradient function takes in `x`, `y` and prediction labels.
-    :param seed: random seed for random parameter initialization.
-    :return: dictionary of training results and training history.
+    @param grad_func: gradient function takes in `x`, `y` and prediction labels.
+    @param seed: random seed for random parameter initialization.
+    @return: dictionary of training results and training history.
     """
     if ml_utils.framework == 'pandas':
         data: pd.Series
