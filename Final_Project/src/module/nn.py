@@ -1,6 +1,5 @@
 # global
 import numpy as np
-import pandas as pd
 
 # local
 
@@ -35,4 +34,4 @@ class FeedForward:
         return
 
     def train(self):
-        return 
+        return
