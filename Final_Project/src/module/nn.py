@@ -1,5 +1,7 @@
 # global
 import numpy as np
+import pandas as pd
+
 
 # local
 
@@ -18,20 +20,38 @@ class FeedForward:
         self.b = np.zeros(ff_dim)
         self.reg = reg
 
-    def forward(self, xs: np.ndarray) -> np.ndarray:
+    def __call__(self, *args, **kwargs) -> dict[int, tuple(np.ndarray, np.ndarray)]:
+        """
+        Default behavior for split dataset and feature processing
+
+        @param args: dataframe as input feature vectors
+        @param kwargs: None
+        @return: dictionary for features classified as 1 and processed features for 0
+        """
+        if len(args) != 1:
+            raise TypeError('FeedForward object expects 1 positional argument, found {}'.format(len(args)))
+        if len(kwargs) > 0:
+            raise TypeError('FeedForward object expects no keywords argument, found {}'.format(len(kwargs)))
+        return self.forward(*args)
+
+    def forward(self, xs: np.ndarray) -> dict[int, tuple(np.ndarray, np.ndarray)]:
         """
         Forward pass of the feed forward layer.
 
-        @param xs: input feature vector with shape (input_dim, )
-        @return: processed feature vector with shape (ff_dim, )
+        @param xs: input feature vectors with shape (batch, input_dim)
+        @return: processed feature vectors with shape (batch, ff_dim)
         """
-        return xs @ self.w + self.b
+        return None
 
-    def loss(self):
-        return
+    def train(self,
+              data: np.ndarray,
+              *,
+              target_cls: int,
+              num_epochs: int,
+              learning_rate: float) -> np.ndarray:
+        xs = data[:, :-1]
+        ys = data[:, -1]
+        processed = xs @ self.w + self.b
+        processed = np.concatenate((processed, np.expand_dims(ys, axis=-1)), axis=-1)
 
-    def auto_grad(self):
-        return
-
-    def train(self):
-        return
+        return None
