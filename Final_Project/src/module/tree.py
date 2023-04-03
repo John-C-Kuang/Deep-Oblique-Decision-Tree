@@ -6,16 +6,14 @@ from typing import Union, Any
 
 class _DODTree:
 
-    def __init__(self, label_col: str, left: Union['_DODTree', None],
+    def __init__(self, left: Union['_DODTree', None],
                  right: Union['_DODTree', None], cls: Any = None,
                  perceptron: FeedForward = None):
         """
-        @param label_col: name of the column containing the labels.
         @param left: decision tree connected to the left branch
         @param right: decision tree connected to the right branch
         @param cls: the class of the leaf. Set to None if current _DODTree is a node.
         """
-        self.label_col = label_col
         self.right = right
         self.left = left
         self.cls = cls
@@ -26,9 +24,8 @@ class _DODTree:
 
     @classmethod
     def build_tree(cls,
-                   train: pd.DataFrame,
-                   label_col: str,
-                   class_order: list[str],
+                   train: Union[pd.DataFrame, None],
+                   class_order: list[int],
                    ff_dim: int,
                    num_epochs: int,
                    learning_rate: float,
@@ -38,10 +35,37 @@ class _DODTree:
 
         # only one class left, stop splitting.
         if len(class_order) == 1:
-            return _DODTree(left=None, right=None, cls=class_order[0], label_col=label_col)
+            return _DODTree(left=None, right=None, cls=class_order[0])
 
-        perceptron = FeedForward(input_dim=len(train.columns) - 1, ff_dim=ff_dim, weight_scale=weight_scale, reg=reg)
-        # perceptron.train() -- expecting updates in Perceptron
+        class_to_determine = class_order.pop(0)
+
+        perceptron = FeedForward(input_dim=len(train.columns) - 1, ff_dim=ff_dim,
+                                 weight_scale=weight_scale, reg=reg,
+                                 target_cls=class_to_determine)
+        new_train = perceptron.train(data=train.to_numpy(), num_epochs=num_epochs, learning_rate=learning_rate)
+
+        # Left is classified
+        return _DODTree(
+            perceptron=perceptron,
+            left=cls.build_tree(
+                train=None,
+                class_order=[class_to_determine],
+                ff_dim=ff_dim,
+                num_epochs=num_epochs,
+                learning_rate=learning_rate,
+                weight_scale=weight_scale,
+                reg=reg
+            ),
+            right=cls.build_tree(
+                train=new_train,
+                class_order=class_order,
+                ff_dim=ff_dim,
+                num_epochs=num_epochs,
+                learning_rate=learning_rate,
+                weight_scale=weight_scale,
+                reg=reg
+            )
+        )
 
 
 
@@ -57,7 +81,7 @@ class DODTree:
         self.root = None
 
     @staticmethod
-    def __determine_class_order(train: pd.DataFrame, label_col: str) -> list[str]:
+    def __determine_class_order(train: pd.DataFrame, label_col: str) -> list[int]:
         """
         Determine the order of classes for the nodes using the frequency of that class in the training data
         @param train: training dataset to be split on.
