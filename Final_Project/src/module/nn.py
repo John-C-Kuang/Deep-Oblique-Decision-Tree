@@ -2,56 +2,161 @@
 import numpy as np
 import pandas as pd
 
-
 # local
+from typing import Any
 
 
-class FeedForward:
-    def __init__(self, input_dim: int, ff_dim: int, *, weight_scale: float = 1e-3, reg: float = 0.0):
+class Linear:
+    def __init__(self, input_dim: int, ff_dim: int, *,
+                 weight_scale: float = 1e-3,
+                 reg: float = 0.0):
         """
-        Initialize the parameters for a feed forward layer.
+        Initialize the parameters for a linear layer.
 
         @param input_dim: integer dimension of the input data.
         @param ff_dim: integer dimension of the hidden layer.
         @param weight_scale: scale of the normal distribution for random initialization.
         @param reg: strength of the L2-Regularization.
         """
+        self.cache_x = None
         self.w = np.random.normal(0., weight_scale, (input_dim, ff_dim))
         self.b = np.zeros(ff_dim)
         self.reg = reg
+        self.history = {'loss': [], 'accuracy': []}
 
-    def __call__(self, *args, **kwargs) -> dict[int, tuple(np.ndarray, np.ndarray)]:
-        """
-        Default behavior for split dataset and feature processing
-
-        @param args: dataframe as input feature vectors
-        @param kwargs: None
-        @return: dictionary for features classified as 1 and processed features for 0
-        """
+    def __call__(self, *args, **kwargs) -> np.ndarray:
         if len(args) != 1:
-            raise TypeError('FeedForward object expects 1 positional argument, found {}'.format(len(args)))
-        if len(kwargs) > 0:
-            raise TypeError('FeedForward object expects no keywords argument, found {}'.format(len(kwargs)))
+            raise TypeError('Linear layer forward pass takes in only 1 positional argument, found {}'.format(len(args)))
+        if len(kwargs) > 0 and 'auto_grad' not in kwargs:
+            raise TypeError("Linear layer forward pass takes in only 1 keyword argument 'auto_grad'")
+
         return self.forward(*args)
 
-    def forward(self, xs: np.ndarray) -> dict[int, tuple(np.ndarray, np.ndarray)]:
+    def forward(self, xs: np.ndarray, *, auto_grad: bool = True) -> np.ndarray:
         """
-        Forward pass of the feed forward layer.
+        Forward pass of the linear layer.
 
-        @param xs: input feature vectors with shape (batch, input_dim)
-        @return: processed feature vectors with shape (batch, ff_dim)
+        @param xs: input feature vectors with shape (batch, input_dim).
+        @param auto_grad: boolean flag indicates if layer parameters are trainable.
+        @return: processed feature vectors with shape (batch, ff_dim).
         """
-        return None
+        if auto_grad:
+            self.cache_x = xs
+        out = xs @ self.w + self.b
+        return out
+
+    def auto_grad(self, dout: np.ndarray, config: dict[str, float]) -> None:
+        """
+        Gradient descent optimizer of the linear layer.
+
+        @param dout: upstream derivative with shape (batch, ff_dim).
+        @param config: keyword configurations for gradient descent with momentum.
+        @return: None
+        """
+        dw = self.cache_x.T @ dout
+        db = np.sum(dout, axis=0)
+        return
+
+
+class ReLU:
+    def __init__(self):
+        self.cache_x = None
+
+    def __call__(self, *args, **kwargs) -> np.ndarray:
+        if len(args) != 1:
+            raise TypeError('ReLU layer forward pass takes in only 1 positional argument, found {}'.format(len(args)))
+        if len(kwargs) > 0 and 'auto_grad' not in kwargs:
+            raise TypeError("ReLU layer forward pass takes in only 1 keyword argument 'auto_grad'")
+
+        return self.forward(*args)
+
+    def forward(self, xs: np.ndarray, auto_grad: bool = True) -> np.ndarray:
+        """
+        Forward pass of the ReLU activation layer
+
+        @param xs: input feature vectors with shape (batch, input_dim).
+        @param auto_grad: boolean flag indicates if layer parameters are trainable.
+        @return: processed feature vectors with shape (batch, ff_dim).
+        """
+        if auto_grad:
+            self.cache_x = xs
+        return np.maximum(xs, 0)
+
+    def backward(self, dout: np.ndarray) -> np.ndarray:
+        """
+        Backward pass of the ReLU activation layer.
+
+        @param dout: upstream derivative with shape (batch, ff_dim).
+        @return: downstream derivative with respect to x.
+        """
+        return np.where(np.greater(self.cache_x, 0.), dout, 0.)
+
+
+class InverseNormalize:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def forward(cls, xs: np.ndarray) -> np.ndarray:
+        """
+        Inverse z-score normalize the given dataset.
+
+        @param xs: the input batched feature vectors as 2d array.
+        @return:
+        """
+        mean = np.mean(xs, axis=0)
+        std = np.std(xs, axis=0)
+        out = (mean - xs) / std
+        return out
+
+
+class FeedForward:
+    def __init__(self, input_dim: int, ff_dim: int, *,
+                 target_cls: int,
+                 weight_scale: float = 1e-3,
+                 reg: float = 0.0):
+        self.input_dim = input_dim
+        self.ff_dim = ff_dim
+        self.linear = Linear(input_dim, ff_dim, weight_scale=weight_scale, reg=reg)
+        self.relu = ReLU()
+        self.norm = InverseNormalize()
+
+        self.target_cls = target_cls
+        self.history = {'loss': [], 'accuracy': []}
+
+    def forward(self, xs: np.ndarray) -> (int, Any):
+        """
+        Forward pass of the feed forward network.
+
+        @param xs: input feature vector as 1d array.
+        @return: integer flag - 1 for hit, 0 for passing to next layer.
+        """
+        fc = self.linear(xs)
+        relu = self.relu(fc)
+
+        if np.sum(relu, axis=-1) >= 0:
+            return 1, self.target_cls
+        else:
+            return 0, self.norm.forward(relu)
 
     def train(self,
               data: np.ndarray,
               *,
-              target_cls: int,
               num_epochs: int,
-              learning_rate: float) -> np.ndarray:
+              learning_rate: float,
+              momentum: float = 0.9) -> np.ndarray:
+        """
+        Train the feed forward layer on given dataset with hyperparameters.
+
+        @param data: the input dataset as 2d array with last column as labels.
+        @param num_epochs: number of epochs to be trained.
+        @param learning_rate: scalar learning rate of optimization.
+        @param momentum: scalar giving momentum strength for gradient descent.
+        @return: the processed feature vectors to be passed into next layer
+        """
         xs = data[:, :-1]
         ys = data[:, -1]
-        processed = xs @ self.w + self.b
-        processed = np.concatenate((processed, np.expand_dims(ys, axis=-1)), axis=-1)
+
+        config = {'momentum': momentum, 'velocity': np.zeros((self.input_dim, self.ff_dim))}
 
         return None
