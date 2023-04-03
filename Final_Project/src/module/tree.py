@@ -5,13 +5,15 @@ from typing import Union, Any
 
 class _DODTree:
 
-    def __init__(self, left: Union['_DODTree', None],
+    def __init__(self, label_col: str, left: Union['_DODTree', None],
                  right: Union['_DODTree', None], cls: Any = None):
         """
+        @param label_col: name of the column containing the labels.
         @param left: decision tree connected to the left branch
         @param right: decision tree connected to the right branch
         @param cls: the class of the leaf. Set to None if current _DODTree is a node.
         """
+        self.label_col = label_col
         self.right = right
         self.left = left
         self.cls = cls
@@ -27,7 +29,14 @@ class _DODTree:
                    num_epochs: int,
                    learning_rate: float
                    ) -> '_DODTree':
-        pass
+
+        # only one class left, stop splitting.
+        if len(class_order) == 1:
+            return _DODTree(left=None, right=None, cls=class_order[0], label_col=label_col)
+
+
+
+
 
 
 class DODTree:
@@ -39,9 +48,13 @@ class DODTree:
         self.train_result = {}
         self.root = None
 
-    def determine_class_order(self, train: pd.DataFrame, label_col: str) -> list[str]:
+    @staticmethod
+    def __determine_class_order(train: pd.DataFrame, label_col: str) -> list[str]:
         """
         Determine the order of classes for the nodes using the frequency of that class in the training data
+        @param train: training dataset to be split on.
+        @param label_col: name of the column containing the labels.
+        @return: a list of class ordered in decreasing frequency
         """
         cls_freq_df = train.groupby(label_col).size()
         cls_freq_vals = cls_freq_df.values.tolist()
@@ -64,7 +77,7 @@ class DODTree:
         @param learning_rate: learning rate for perceptron
         @return: None
         """
-        class_order = self.determine_class_order(train, label_col)
+        class_order = DODTree.__determine_class_order(train, label_col)
         self.root = _DODTree.build_tree(train, label_col, class_order, num_epochs, learning_rate)
 
     def predict(self):
