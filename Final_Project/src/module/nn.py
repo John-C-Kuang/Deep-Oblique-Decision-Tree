@@ -134,7 +134,6 @@ class FeedForward:
         self.ff_dim = ff_dim
         self.linear = Linear(input_dim, ff_dim, weight_scale=weight_scale, reg=reg)
         self.relu = ReLU()
-        self.norm = InverseNormalize()
 
         self.target_cls = target_cls
         self.rest_cls = rest_cls
