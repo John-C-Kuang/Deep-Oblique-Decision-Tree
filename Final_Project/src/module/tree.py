@@ -1,12 +1,14 @@
 import pandas as pd
 
+from nn import FeedForward
 from typing import Union, Any
 
 
 class _DODTree:
 
     def __init__(self, label_col: str, left: Union['_DODTree', None],
-                 right: Union['_DODTree', None], cls: Any = None):
+                 right: Union['_DODTree', None], cls: Any = None,
+                 perceptron: FeedForward = None):
         """
         @param label_col: name of the column containing the labels.
         @param left: decision tree connected to the left branch
@@ -17,8 +19,9 @@ class _DODTree:
         self.right = right
         self.left = left
         self.cls = cls
+        self.perceptron = perceptron
 
-    def predict(self):
+    def predict(self, feature: Union[pd.Series, dict]):
         pass
 
     @classmethod
@@ -26,14 +29,19 @@ class _DODTree:
                    train: pd.DataFrame,
                    label_col: str,
                    class_order: list[str],
+                   ff_dim: int,
                    num_epochs: int,
-                   learning_rate: float
+                   learning_rate: float,
+                   weight_scale: float = 1e-3,
+                   reg: float = 0.0
                    ) -> '_DODTree':
 
         # only one class left, stop splitting.
         if len(class_order) == 1:
             return _DODTree(left=None, right=None, cls=class_order[0], label_col=label_col)
 
+        perceptron = FeedForward(input_dim=len(train.columns) - 1, ff_dim=ff_dim, weight_scale=weight_scale, reg=reg)
+        # perceptron.train() -- expecting updates in Perceptron
 
 
 
@@ -66,19 +74,33 @@ class DODTree:
     def train(self,
               train: pd.DataFrame,
               label_col: str,
+              ff_dim: int,
               num_epochs: int = 1000,
-              learning_rate: float = 0.001):
+              learning_rate: float = 0.001,
+              weight_scale: float = 1e-3,
+              reg: float = 0.0):
         """
         Builds a complete DODTree with given hyperparameters.
 
         @param train: training dataset to be split on.
         @param label_col: name of the column containing the labels.
+        @param ff_dim: integer dimension of the hidden layer.
         @param num_epochs: number of iteration to run until epoch for perceptron
         @param learning_rate: learning rate for perceptron
+        @param weight_scale: scale of the normal distribution for perceptron random initialization.
+        @param reg: strength of the L2-Regularization in perceptron.
         @return: None
         """
         class_order = DODTree.__determine_class_order(train, label_col)
-        self.root = _DODTree.build_tree(train, label_col, class_order, num_epochs, learning_rate)
+        self.root = _DODTree.build_tree(
+            train, label_col, class_order, ff_dim,
+            num_epochs, learning_rate, weight_scale, reg
+        )
 
-    def predict(self):
-        pass
+    def predict(self, feature: Union[pd.Series, dict]) -> Any:
+        if self.root is None:
+            raise "Decision Tree instance has not been trained"
+
+        if isinstance(feature, pd.Series):
+            return self.root.predict(feature.to_dict())
+        return self.root.predict(feature)

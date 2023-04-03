@@ -34,4 +34,7 @@ def preprocess_wine_quality() -> pd.DataFrame:
     df = pd.read_csv(DATASET_PATH)
     df = __handle_discrete(df)
     df = __handle_continuous(df)
+    # Make the label column the last column in df
+    label_col = df.pop(CLASS_LABEL)
+    df[CLASS_LABEL] = label_col
     return df
