@@ -94,7 +94,7 @@ class ReLU:
         @param dout: upstream derivative with shape (batch, ff_dim).
         @return: downstream derivative with respect to x.
         """
-        return np.where(np.greater(self.cache_x, 0.), dout, 0.)
+        return dout * (np.sum(self.cache_x, axis=-1) >= 0).astype(int)
 
 
 class InverseNormalize:
@@ -140,30 +140,24 @@ class FeedForward:
         self.rest_cls = rest_cls
         self.history = {'loss': [], 'accuracy': []}
 
-    def forward(self, xs: np.ndarray) -> (int, Any):
+    def forward(self, xs: np.ndarray) -> np.ndarray:
         """
         Forward pass of the feed forward network.
 
-        @param xs: input feature vector as 1d array.
-        @return: integer flag - 1 for hit, 0 for passing to next layer.
+        @param xs: input feature vector as 1d or batched array.
+        @return: processed feature vectors
         """
-        fc = self.linear(xs)
-        relu = self.relu(fc)
+        fc = self.linear(xs, auto_grad=False)
+        out = self.relu(fc, auto_grad=False)
 
-        if np.sum(relu, axis=-1) >= 0:
-            return 1, self.target_cls
-        else:
-            if self.rest_cls is not None:
-                return 1, self.rest_cls
-            else:
-                return 0, self.norm(relu)
+        return out
 
     def train(self,
               data: np.ndarray,
               *,
               num_epochs: int,
               learning_rate: float,
-              momentum: float = 0.9) -> np.ndarray:
+              momentum: float = 0.9) -> (np.ndarray, np.ndarray):
         """
         Train the feed forward layer on given dataset with hyperparameters.
 
@@ -179,6 +173,17 @@ class FeedForward:
         config = {'momentum': momentum, 'velocity': np.zeros((self.input_dim, self.ff_dim)),
                   'learning_rate': learning_rate}
         for _ in range(num_epochs):
-            pass
+            fc = self.linear(xs)
+            relu = self.relu(fc)
+            scores = np.sum(relu, axis=-1)
 
-        return None
+            binary_label = (ys == self.target_cls).astype(int)
+            predict_label = (scores >= 0).astype(int)
+            self.history['accuracy'].append(np.mean(np.equal(binary_label, predict_label)))
+            self.history['loss'].append(np.mean(np.abs(binary_label - predict_label) * np.abs(scores)))
+
+            dout = 2 * (predict_label - binary_label) * np.abs(predict_label - binary_label) * np.sign(scores)
+            dout = self.relu.backward(dout)
+            config = self.linear.auto_grad(dout, config)
+
+        return np.concatenate((self.forward(xs), np.expand_dims(ys, axis=-1)), axis=-1)
