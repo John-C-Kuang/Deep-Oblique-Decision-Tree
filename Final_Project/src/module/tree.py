@@ -7,30 +7,25 @@ from typing import Union, Any
 
 class _DODTree:
 
-    def __init__(self, left: Union['_DODTree', None],
-                 right: Union['_DODTree', None], cls: Any = None,
+    def __init__(self, next: Union['_DODTree', None], cls: Any = None,
                  perceptron: FeedForward = None):
         """
-        @param left: decision tree connected to the left branch
-        @param right: decision tree connected to the right branch
+        @param next:
         @param cls: the class of the leaf. Set to None if current _DODTree is a node.
         """
-        self.right = right
-        self.left = left
+        self.next = next
         self.cls = cls
         self.perceptron = perceptron
 
     def predict(self, features: np.ndarray) -> Any:
-        if self.left is None and self.right is None:
-            return self.cls
-        prediction, new_features = self.perceptron.forward(features)
+        prediction, new_features_or_result_class = self.perceptron.forward(features)
         if prediction:
-            return self.left.predict(new_features)
-        return self.right.predict(new_features)
+            return new_features_or_result_class
+        return self.next.predict(new_features_or_result_class)
 
     @classmethod
     def build_tree(cls,
-                   train: Union[pd.DataFrame, None],
+                   train: Union[np.ndarray, None],
                    class_order: list[int],
                    ff_dim: int,
                    num_epochs: int,
@@ -41,28 +36,18 @@ class _DODTree:
 
         # only one class left, stop splitting.
         if len(class_order) == 1:
-            return _DODTree(left=None, right=None, cls=class_order[0])
+            return _DODTree(next=None, cls=class_order[0])
 
         class_to_determine = class_order.pop(0)
 
-        perceptron = FeedForward(input_dim=len(train.columns) - 1, ff_dim=ff_dim,
+        perceptron = FeedForward(input_dim=train.size - 1, ff_dim=ff_dim,
                                  weight_scale=weight_scale, reg=reg,
                                  target_cls=class_to_determine)
-        new_train = perceptron.train(data=train.to_numpy(), num_epochs=num_epochs, learning_rate=learning_rate)
+        new_train = perceptron.train(data=train, num_epochs=num_epochs, learning_rate=learning_rate)
 
         # Left is classified
         return _DODTree(
-            perceptron=perceptron,
-            left=cls.build_tree(
-                train=None,
-                class_order=[class_to_determine],
-                ff_dim=ff_dim,
-                num_epochs=num_epochs,
-                learning_rate=learning_rate,
-                weight_scale=weight_scale,
-                reg=reg
-            ),
-            right=cls.build_tree(
+            next=cls.build_tree(
                 train=new_train,
                 class_order=class_order,
                 ff_dim=ff_dim,
@@ -99,7 +84,7 @@ class DODTree:
         return [pair[0] for pair in cls_freq_joint_list]
 
     def train(self,
-              train: pd.DataFrame,
+              train: Union[pd.DataFrame, np.ndarray],
               label_col: str,
               ff_dim: int,
               num_epochs: int = 1000,
@@ -119,8 +104,12 @@ class DODTree:
         @return: None
         """
         class_order = DODTree.__determine_class_order(train, label_col)
+
+        if isinstance(train, pd.DataFrame):
+            train = train.to_numpy()
+
         self.root = _DODTree.build_tree(
-            train, label_col, class_order, ff_dim,
+            train, class_order, ff_dim,
             num_epochs, learning_rate, weight_scale, reg
         )
 
