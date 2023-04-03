@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from nn import FeedForward
@@ -19,8 +20,13 @@ class _DODTree:
         self.cls = cls
         self.perceptron = perceptron
 
-    def predict(self, feature: Union[pd.Series, dict]):
-        pass
+    def predict(self, features: np.ndarray) -> Any:
+        if self.left is None and self.right is None:
+            return self.cls
+        prediction, new_features = self.perceptron.forward(features)
+        if prediction:
+            return self.left.predict(new_features)
+        return self.right.predict(new_features)
 
     @classmethod
     def build_tree(cls,
@@ -66,9 +72,6 @@ class _DODTree:
                 reg=reg
             )
         )
-
-
-
 
 
 class DODTree:
@@ -121,10 +124,8 @@ class DODTree:
             num_epochs, learning_rate, weight_scale, reg
         )
 
-    def predict(self, feature: Union[pd.Series, dict]) -> Any:
+    def predict(self, feature: np.ndarray) -> Any:
         if self.root is None:
             raise "Decision Tree instance has not been trained"
 
-        if isinstance(feature, pd.Series):
-            return self.root.predict(feature.to_dict())
         return self.root.predict(feature)
