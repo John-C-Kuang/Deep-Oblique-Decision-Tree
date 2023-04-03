@@ -22,13 +22,12 @@ class Linear:
         self.w = np.random.normal(0., weight_scale, (input_dim, ff_dim))
         self.b = np.zeros(ff_dim)
         self.reg = reg
-        self.history = {'loss': [], 'accuracy': []}
 
     def __call__(self, *args, **kwargs) -> np.ndarray:
         if len(args) != 1:
-            raise TypeError('Linear layer forward pass takes in only 1 positional argument, found {}'.format(len(args)))
+            raise TypeError('Linear layer forward pass expects only 1 positional argument, found {}'.format(len(args)))
         if len(kwargs) > 0 and 'auto_grad' not in kwargs:
-            raise TypeError("Linear layer forward pass takes in only 1 keyword argument 'auto_grad'")
+            raise TypeError("Linear layer forward pass expects only 1 keyword argument 'auto_grad'")
 
         return self.forward(*args)
 
@@ -64,9 +63,9 @@ class ReLU:
 
     def __call__(self, *args, **kwargs) -> np.ndarray:
         if len(args) != 1:
-            raise TypeError('ReLU layer forward pass takes in only 1 positional argument, found {}'.format(len(args)))
+            raise TypeError('ReLU layer forward pass expects only 1 positional argument, found {}'.format(len(args)))
         if len(kwargs) > 0 and 'auto_grad' not in kwargs:
-            raise TypeError("ReLU layer forward pass takes in only 1 keyword argument 'auto_grad'")
+            raise TypeError("ReLU layer forward pass expects only 1 keyword argument 'auto_grad'")
 
         return self.forward(*args)
 
@@ -96,6 +95,15 @@ class InverseNormalize:
     def __init__(self):
         pass
 
+    def __call__(self, *args, **kwargs) -> np.ndarray:
+        if len(args) != 1:
+            raise TypeError(
+                'Normalize layer forward pass expects only 1 positional argument, found {}'.format(len(args)))
+        if len(kwargs) > 0:
+            raise TypeError("Normalize layer forward pass expects no keyword argument, found {}".format(len(kwargs)))
+
+        return self.forward(*args)
+
     @classmethod
     def forward(cls, xs: np.ndarray) -> np.ndarray:
         """
@@ -113,6 +121,7 @@ class InverseNormalize:
 class FeedForward:
     def __init__(self, input_dim: int, ff_dim: int, *,
                  target_cls: int,
+                 rest_cls: int = None,
                  weight_scale: float = 1e-3,
                  reg: float = 0.0):
         self.input_dim = input_dim
@@ -122,6 +131,7 @@ class FeedForward:
         self.norm = InverseNormalize()
 
         self.target_cls = target_cls
+        self.rest_cls = rest_cls
         self.history = {'loss': [], 'accuracy': []}
 
     def forward(self, xs: np.ndarray) -> (int, Any):
@@ -137,7 +147,10 @@ class FeedForward:
         if np.sum(relu, axis=-1) >= 0:
             return 1, self.target_cls
         else:
-            return 0, self.norm.forward(relu)
+            if self.rest_cls is not None:
+                return 1, self.rest_cls
+            else:
+                return 0, self.norm(relu)
 
     def train(self,
               data: np.ndarray,

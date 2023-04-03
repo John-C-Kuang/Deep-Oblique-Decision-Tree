@@ -7,17 +7,22 @@ from typing import Union, Any
 
 class _DODTree:
 
-    def __init__(self, next: Union['_DODTree', None], cls: Any = None,
+    def __init__(self, next: Union['_DODTree', None],
                  perceptron: FeedForward = None):
         """
-        @param next:
-        @param cls: the class of the leaf. Set to None if current _DODTree is a node.
+        Deep Oblique Decision Tree. A variant of Oblique Decision Tree that utilizes
+        concepts of deep learning.
+        @param next: the next layer of _DODTree
         """
         self.next = next
-        self.cls = cls
         self.perceptron = perceptron
 
     def predict(self, features: np.ndarray) -> Any:
+        """
+        Classify the given features
+        @param features: the features to be classified
+        @return: the predicted class of the features given
+        """
         prediction, new_features_or_result_class = self.perceptron.forward(features)
         if prediction:
             return new_features_or_result_class
@@ -33,16 +38,27 @@ class _DODTree:
                    weight_scale: float = 1e-3,
                    reg: float = 0.0
                    ) -> '_DODTree':
+        """
+        Build an instance of the _DODTree.
+        @param train: training data
+        @param ff_dim: the dimension of the FeedForward output
+        @param num_epochs: number since epochs for the perceptron in FeedForward
+        @param learning_rate: learning rate of the perceptron
+        @param weight_scale: scale of the normal distribution for random initialization in FeedForward
+        @param reg: strength of the L2-Regularization.
+        @return: an instance of the _DODTree.
+        """
 
         # only one class left, stop splitting.
         if len(class_order) == 1:
-            return _DODTree(next=None, cls=class_order[0])
+            return _DODTree(next=None)
 
         class_to_determine = class_order.pop(0)
+        rest_cls = class_order[0] if len(class_order) == 1 else None
 
         perceptron = FeedForward(input_dim=train.size - 1, ff_dim=ff_dim,
                                  weight_scale=weight_scale, reg=reg,
-                                 target_cls=class_to_determine)
+                                 target_cls=class_to_determine, rest_cls=rest_cls)
         new_train = perceptron.train(data=train, num_epochs=num_epochs, learning_rate=learning_rate)
 
         # Left is classified
@@ -63,7 +79,7 @@ class DODTree:
 
     def __init__(self):
         """
-        Metaclass for _DODTree
+        Metaclass for _DODTree. Designed for hyperparameter tuning.
         """
         self.train_result = {}
         self.root = None
@@ -113,8 +129,13 @@ class DODTree:
             num_epochs, learning_rate, weight_scale, reg
         )
 
-    def predict(self, feature: np.ndarray) -> Any:
+    def predict(self, features: np.ndarray) -> Any:
+        """
+        Classify the given features
+        @param features: features to be classified
+        @return: the predicted class of the given features
+        """
         if self.root is None:
             raise "Decision Tree instance has not been trained"
 
-        return self.root.predict(feature)
+        return self.root.predict(features)
