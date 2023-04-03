@@ -44,17 +44,23 @@ class Linear:
         out = xs @ self.w + self.b
         return out
 
-    def auto_grad(self, dout: np.ndarray, config: dict[str, float]) -> None:
+    def auto_grad(self, dout: np.ndarray, config: dict[str, float]) -> dict[str, float]:
         """
         Gradient descent optimizer of the linear layer.
 
         @param dout: upstream derivative with shape (batch, ff_dim).
         @param config: keyword configurations for gradient descent with momentum.
-        @return: None
+        @return: configurations for the next optimizer iteration.
         """
-        dw = self.cache_x.T @ dout
+        dw = self.cache_x.T @ dout + self.reg * self.w
         db = np.sum(dout, axis=0)
-        return
+        self.b -= config['learning_rate'] * db
+
+        v = config['momentum'] * config['velocity'] - config['learning_rate'] * dw
+        config['velocity'] = v
+        self.w += v
+
+        return config
 
 
 class ReLU:
@@ -170,6 +176,9 @@ class FeedForward:
         xs = data[:, :-1]
         ys = data[:, -1]
 
-        config = {'momentum': momentum, 'velocity': np.zeros((self.input_dim, self.ff_dim))}
+        config = {'momentum': momentum, 'velocity': np.zeros((self.input_dim, self.ff_dim)),
+                  'learning_rate': learning_rate}
+        for _ in range(num_epochs):
+            pass
 
         return None
