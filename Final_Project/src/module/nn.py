@@ -181,8 +181,9 @@ class FeedForward:
             self.history['accuracy'].append(np.mean(np.equal(binary_label, predict_label)))
             self.history['loss'].append(np.mean(np.abs(binary_label - predict_label) * np.abs(scores)))
 
-            dout = 2 * (predict_label - binary_label) * np.abs(predict_label - binary_label) * np.sign(scores)
+            dout = 2 * (predict_label - binary_label) * np.abs(predict_label - binary_label)[:, np.newaxis] * np.sign(
+                relu)
             dout = self.relu.backward(dout)
             config = self.linear.auto_grad(dout, config)
 
-        return np.concatenate((self.forward(xs), np.expand_dims(ys, axis=-1)), axis=-1)
+        return np.concatenate((self.forward(xs), ys[:, np.newaxis]), axis=-1)
