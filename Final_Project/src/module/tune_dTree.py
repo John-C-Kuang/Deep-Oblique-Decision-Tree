@@ -38,10 +38,12 @@ class Tune_DTree:
                        'target_impurity': target_impurity, 'validation_accuracy': validation_accuracy,
                        'test_accuracy': test_accuracy}
                 records = pd.concat([records, pd.DataFrame(row, index=[len(records)])])
-            except:
+            except Exception as e:
                 print('Failed with: impurity_func: {}, max_depth: {}, min_instances: {}, target_impurity: {}'.format(
                     impurity_func, max_depth, min_instances, target_impurity))
+                print(e)
         return records
+
 def main():
     df = preprocess_wine_quality()
     train, test = train_test_split(df, test_size=0.5, random_state=42)

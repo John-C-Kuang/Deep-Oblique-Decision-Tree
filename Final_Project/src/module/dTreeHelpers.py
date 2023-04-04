@@ -27,7 +27,7 @@ def n_folds(folds, train):
 
 def predict_data(data, tree):
     # given a subset dataframe as test data, predict its output alongside with its original answer
-    y_actual = data['track_genre'].to_numpy()
+    y_actual = data['quality'].to_numpy()
     # apply decision tree prediction to each of the row
     y_pred = data.apply(lambda row: tree.predict(row), axis=1).to_numpy()
 
@@ -42,7 +42,7 @@ def apply_DTree(train: pd.DataFrame,
                 discrete_threshold: int = 10,
                 max_depth: int = None,
                 min_instances: int = 2,
-                target_impurity: float = 0.0
+                target_impurity: float = 0.0,
                 ):
     impurity_func = ml_utils.metric.entropy if impurity_func == 'entropy' else ml_utils.metric.gini
     tree = ml_utils.experimental.DecisionTree(discrete_threshold=discrete_threshold,
@@ -50,7 +50,7 @@ def apply_DTree(train: pd.DataFrame,
                                               min_instances=min_instances,
                                               target_impurity=target_impurity,
                                               impurity_func=impurity_func)
-    tree.train(train, 'track_genre')
+    tree.train(train, 'quality')
     validation_accuracy = 'N/A'
     test_accuracy = 'N/A'
     if validation is not None:
