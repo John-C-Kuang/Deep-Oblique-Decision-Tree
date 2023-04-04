@@ -1,7 +1,7 @@
 import pandas as pd
 import data_partition as dp
+import src.utils.ml_utils.metric
 from thread import multi_thread_tuning as tn
-from src.utils.ml_utils import framework_handler
 from sklearn.metrics import accuracy_score
 from src.utils import ml_utils
 from typing import Callable
@@ -10,19 +10,33 @@ from typing import Callable
 class Tune_Knn:
 
     def __init__(self, train: pd.DataFrame, test: pd.DataFrame, label_col: str):
+        """
+        Hyperparameter tuning class for the KNN classification algorithm. Uses multithreading to increase performance.
+        @param train: the training set
+        @param test: the testing set
+        @param label_col: the column that represents the label
+        """
         self.train = train
         self.test = test
         self.label_col = label_col
-        framework_handler.set_framework("pandas")
+        ml_utils.numpy()
 
-    def tune(self, k_val: int, distance_funcs: list[str], random_state: int = 42) -> dict:
+    def tune(self, k_val: int, distance_funcs: list[str], random_state: int = 42, threads: int = 4) -> dict:
+        """
+        Perform hyperparameter tuning for KNN
+        @param k_val: the highest k-value of KNN to try
+        @param distance_funcs: the distance function to use in KNN
+        @param random_state: random seed
+        @param threads: the number of threads allowed to tune
+        @return: a report of the tuning
+        """
 
         function_args = []
         for k in range(1, k_val + 1):
             function_args.append([k, random_state, distance_funcs])
 
         validation_result = tn.tune(task_function=self.__batch_train_n_predict,
-                                    tasks_param=function_args)
+                                    tasks_param=function_args, max_active_threads=threads)
         best_valid_hyper_params = max(validation_result, key=lambda data: data[0])
         # split test data into x_test and y_test
         x_train, x_test, y_train, y_test = dp.partition_data(
@@ -30,9 +44,10 @@ class Tune_Knn:
         )
 
         best_valid_knn = ml_utils.experimental.KNN()
-        best_valid_knn.train(feature_set=x_train, labels=y_train)
-        test_pred = [best_valid_knn.predict(feature=x_test.loc[i], k=best_valid_hyper_params[1],
-                                            dist_func=best_valid_hyper_params[2]) for i in range(x_test.shape[0])]
+        best_valid_knn.train(feature_set=x_train.to_numpy(), labels=y_train.to_numpy())
+        # could make dist_func more flexible if want to
+        test_pred = [best_valid_knn.predict(feature=x_test.iloc[i].to_numpy(), k=best_valid_hyper_params[1],
+                                            dist_func=src.utils.ml_utils.metric.CosineSimilarity) for i in range(x_test.shape[0])]
         test_accuracy = accuracy_score(y_test, test_pred)
         return {
             "validation accuracy": best_valid_hyper_params[0],
@@ -44,23 +59,14 @@ class Tune_Knn:
     def __batch_train_n_predict(self, k: int, random_state: int,
                                 distance_funcs: list[Callable]) -> (float, int, str):
         for dist_func in distance_funcs:
-            dist = ml_utils.metric.entropy if dist_func == "entropy" else ml_utils.metric.gini
+            # could support other types if we really want to
+            dist = src.utils.ml_utils.metric.CosineSimilarity
             knn = ml_utils.experimental.KNN()
             x_train, x_valid, y_train, y_valid = dp.partition_data(
                 df=self.train, label_col=self.label_col, test_set_prop=0.1, random_state=random_state
             )
-            knn.train(feature_set=x_train, labels=y_train)
-            valid_pred = [knn.predict(feature=x_valid.loc[i], k=k, dist_func=dist)
+            knn.train(feature_set=x_train.to_numpy(), labels=y_train.to_numpy())
+            valid_pred = [knn.predict(feature=x_valid.iloc[i].to_numpy(), k=k, dist_func=dist)
                           for i in range(x_valid.shape[0])]
             accuracy = accuracy_score(y_valid, valid_pred)
             return accuracy, k, dist_func
-
-
-
-df = pd.read_csv("../../dataset/Wine_Quality_Data.csv")
-
-from sklearn.model_selection import train_test_split
-train, test = train_test_split(df, test_size=0.5, random_state=42)
-tunner = Tune_Knn(train=train, test=test, label_col="quality")
-result = tunner.tune(1, ["entropy"], 42)
-print(result)

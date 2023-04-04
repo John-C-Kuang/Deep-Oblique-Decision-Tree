@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-DATASET_PATH = "Wine_Quality_Data.csv"
+DATASET_PATH = "../../dataset/Wine_Quality_Data.csv"
 CLASS_LABEL = "quality"
 DISCRETE_LABEL = "color"
 
