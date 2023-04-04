@@ -1,6 +1,7 @@
 import pandas as pd
 import data_partition as dp
 from thread import multi_thread_tuning as tn
+from src.utils.ml_utils import framework_handler
 from sklearn.metrics import accuracy_score
 from src.utils import ml_utils
 from typing import Callable
@@ -12,15 +13,16 @@ class Tune_Knn:
         self.train = train
         self.test = test
         self.label_col = label_col
+        framework_handler.set_framework("pandas")
 
-    def tune(self, k_val: int, distance_funcs: list[Callable], random_state: int = 42) -> dict:
+    def tune(self, k_val: int, distance_funcs: list[str], random_state: int = 42) -> dict:
 
         function_args = []
-        for k in range(k_val):
+        for k in range(1, k_val + 1):
             function_args.append([k, random_state, distance_funcs])
 
         validation_result = tn.tune(task_function=self.__batch_train_n_predict,
-                                    tasks_param=[function_args])
+                                    tasks_param=function_args)
         best_valid_hyper_params = max(validation_result, key=lambda data: data[0])
         # split test data into x_test and y_test
         x_train, x_test, y_train, y_test = dp.partition_data(
@@ -55,5 +57,10 @@ class Tune_Knn:
 
 
 
-# df = pd.read_csv("../../dataset/Wine_Quality_Data.csv")
+df = pd.read_csv("../../dataset/Wine_Quality_Data.csv")
 
+from sklearn.model_selection import train_test_split
+train, test = train_test_split(df, test_size=0.5, random_state=42)
+tunner = Tune_Knn(train=train, test=test, label_col="quality")
+result = tunner.tune(1, ["entropy"], 42)
+print(result)

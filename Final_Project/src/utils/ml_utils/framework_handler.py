@@ -15,7 +15,7 @@ def set_framework(framework: str) -> None:
     key = framework.lower()
     if key not in supported_frameworks:
         raise RuntimeError('Given framework library unsupported')
-    utils.ml_utils.framework = supported_frameworks[key]
+    src.utils.ml_utils.framework = supported_frameworks[key]
 
 
 def numpy() -> None:

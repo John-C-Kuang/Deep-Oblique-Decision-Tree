@@ -25,10 +25,3 @@ class multi_thread_tuning:
 
         [thread.join() for thread in threads]
         return records
-
-
-# Test
-
-task = lambda x, y: x + y
-tasks_param = [[1, 2], [3, 4], [5, 6], [7, 8], [-1, -2]]
-result = multi_thread_tuning.tune(task, tasks_param, 4)
