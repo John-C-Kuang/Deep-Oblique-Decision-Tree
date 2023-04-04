@@ -8,7 +8,6 @@ from typing import Callable
 
 
 class Tune_Knn:
-
     def __init__(self, train: pd.DataFrame, test: pd.DataFrame, label_col: str):
         """
         Hyperparameter tuning class for the KNN classification algorithm. Uses multithreading to increase performance.
