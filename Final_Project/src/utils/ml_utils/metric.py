@@ -5,7 +5,7 @@ import pandas as pd
 # local
 from typing import Union, Sequence
 from collections import Counter
-from utils import ml_utils
+from src.utils import ml_utils
 
 
 def mse(actual: Union[pd.Series, np.ndarray], pred: Union[pd.Series, np.ndarray]):

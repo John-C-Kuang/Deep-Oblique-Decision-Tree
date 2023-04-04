@@ -6,9 +6,9 @@ class multi_thread_tuning:
 
     @classmethod
     def __run_task_wrapper(cls, semaphore: Semaphore, task_function: Callable,
-                           task_param: list[Any], record: list[Any]):
+                           task_param: list[Any], records: list[Any]):
         semaphore.acquire()
-        record.append(task_function(*task_param))
+        records.append(task_function(*task_param))
         semaphore.release()
 
     @classmethod

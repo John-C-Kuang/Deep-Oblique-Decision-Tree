@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 # local
-from utils import ml_utils
+from src.utils import ml_utils
 from typing import Union, Sequence, Callable, Any
 
 
