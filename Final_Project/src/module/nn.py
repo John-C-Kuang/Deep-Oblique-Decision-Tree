@@ -193,12 +193,11 @@ class FeedForward:
 
         return self.forward(*args, **kwargs)
 
-    def forward(self, xs: np.ndarray, *, train: bool = False) -> np.ndarray:
+    def forward(self, xs: np.ndarray) -> np.ndarray:
         """
         Forward pass of the feed forward network.
 
         @param xs: input feature vector as 1d or batched array.
-        @param train: boolean flag indicates if the networking is training.
         @return: processed feature vectors
         """
         norm = self.norm(xs)
@@ -207,9 +206,7 @@ class FeedForward:
         score = self.perceptron(relu, auto_grad=False)
         out = self.sigmoid(score, auto_grad=False)
 
-        if train:
-            return np.concatenate((fc, out), axis=-1)
-        return out
+        return np.concatenate((fc, out), axis=-1)
 
     def train(self,
               data: np.ndarray,
@@ -253,7 +250,7 @@ class FeedForward:
             dout = self.relu.backward(dout)
             _, config_linear = self.linear.backward(dout, config_linear)
 
-        return np.insert(self.forward(xs, train=True), -1, ys, axis=1)
+        return np.insert(self.forward(xs), -1, ys, axis=1)
 
 
 if __name__ == '__main__':
