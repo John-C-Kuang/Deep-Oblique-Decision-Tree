@@ -11,7 +11,7 @@ def __handle_discrete(df: pd.DataFrame) -> pd.DataFrame:
     Encode all discrete columns using one hot encoding.
     """
     # The only discrete column is "color." Hard coding one hot for now.
-    df[DISCRETE_LABEL] = np.where(df[DISCRETE_LABEL] == "red", 1, 10)
+    df[DISCRETE_LABEL] = np.where(df[DISCRETE_LABEL] == "red", 1, 0)
     return df
 
 

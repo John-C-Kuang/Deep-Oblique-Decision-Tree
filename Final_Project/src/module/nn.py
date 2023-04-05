@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 
+
 # local
 
 
@@ -134,7 +135,8 @@ class Sigmoid:
 
 class Normalize:
     def __init__(self):
-        pass
+        self.mean = None
+        self.std = None
 
     def __call__(self, *args, **kwargs) -> np.ndarray:
         if len(args) != 1:
@@ -145,17 +147,19 @@ class Normalize:
 
         return self.forward(*args)
 
-    @classmethod
-    def forward(cls, xs: np.ndarray) -> np.ndarray:
+    def forward(self, xs: np.ndarray) -> np.ndarray:
         """
         Z-score normalize the given dataset.
 
         @param xs: the input batched feature vectors as 2d array.
         @return:
         """
-        mean = np.mean(xs, axis=0)
-        std = np.std(xs, axis=0)
-        out = (xs - mean) / std
+        if self.mean is None:
+            self.mean = np.mean(xs, axis=0)
+        if self.std is None:
+            self.std = np.std(xs, axis=0)
+
+        out = (xs - self.mean) / self.std
         return out
 
 
@@ -231,15 +235,15 @@ class FeedForward:
         config_perceptron = {'momentum': momentum, 'velocity': np.zeros((self.ff_dim, 1)),
                              'learning_rate': learning_rate}
         gt_label = (ys == self.target_cls).astype(int)
+        norm = self.norm(xs)
+
         for _ in range(num_epochs):
-            norm = self.norm(xs)
             fc = self.linear(norm)
             relu = self.relu(fc)
             scores = self.perceptron(relu)
             prob = self.sigmoid(scores)
 
             predict_label = np.squeeze((prob >= self.sigmoid_threshold).astype(int))
-            # predict_label = (scores >= 0).astype(int)
             self.history['accuracy'].append(1 - np.mean(np.abs(gt_label - predict_label)))
             self.history['loss'].append(
                 -np.mean(gt_label * np.log(np.squeeze(prob)) + (1 - gt_label) * np.log(1 - np.squeeze(prob))))
