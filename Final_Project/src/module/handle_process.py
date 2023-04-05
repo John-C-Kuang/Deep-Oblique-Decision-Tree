@@ -1,5 +1,5 @@
 from multiprocessing import Process, Manager, BoundedSemaphore
-from typing import Callable, Any
+from typing import Callable, Any, Sequence
 
 
 class multi_process_tuning:
@@ -12,7 +12,7 @@ class multi_process_tuning:
         semaphore.release()
 
     @classmethod
-    def tune(cls, task_function: Callable, tasks_param: list[list[Any]],
+    def tune(cls, task_function: Callable, tasks_param: list[Sequence[Any]],
              max_active_processes: int = 4):
         processes = []
         semaphore = BoundedSemaphore(max_active_processes)
