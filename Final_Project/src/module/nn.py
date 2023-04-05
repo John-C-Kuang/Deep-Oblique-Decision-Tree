@@ -175,6 +175,7 @@ class FeedForward:
         """
         self.input_dim = input_dim
         self.ff_dim = ff_dim
+        self.norm = Normalize()
         self.linear = Linear(input_dim, ff_dim, weight_scale=np.sqrt(1 / input_dim), reg=reg)
         self.relu = ReLU()
         self.perceptron = Linear(ff_dim, 1, weight_scale=np.sqrt(1 / ff_dim), reg=reg)
@@ -200,7 +201,8 @@ class FeedForward:
         @param train: boolean flag indicates if the networking is training.
         @return: processed feature vectors
         """
-        fc = self.linear(xs, auto_grad=False)
+        norm = self.norm(xs)
+        fc = self.linear(norm, auto_grad=False)
         relu = self.relu(fc, auto_grad=False)
         score = self.perceptron(relu, auto_grad=False)
         out = self.sigmoid(score, auto_grad=False)
@@ -233,7 +235,8 @@ class FeedForward:
                              'learning_rate': learning_rate}
         gt_label = (ys == self.target_cls).astype(int)
         for _ in range(num_epochs):
-            fc = self.linear(xs)
+            norm = self.norm(xs)
+            fc = self.linear(norm)
             relu = self.relu(fc)
             scores = self.perceptron(relu)
             prob = self.sigmoid(scores)
