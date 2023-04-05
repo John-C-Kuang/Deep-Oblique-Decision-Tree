@@ -10,8 +10,11 @@ from sklearn.metrics import accuracy_score
 from src.utils import ml_utils
 from tree import DODTree
 
+# local
+import warnings
 
-class tune_dodt:
+
+class TuneDODT:
     def __init__(self, train: pd.DataFrame, test: pd.DataFrame, label_col: str):
         """
         Hyperparameter tuning class for the KNN classification algorithm. Uses multithreading to increase performance.
@@ -33,17 +36,11 @@ class tune_dodt:
         validation_result = tn.tune(task_function=self._batch_train_n_predict,
                                     tasks_param=combinations, max_active_processes=processes)
         hyper_params = max(validation_result, key=lambda data: data["accuracy"])
-        x_train, x_test, y_train, y_test = dp.partition_data(
-            df=self.train, label_col=self.label_col, test_set_prop=0.2, random_state=random_state
-        )
-        meta_tree = DODTree()
-        meta_tree.train(
-            ff_dim=hyper_params["ff_dim"], momentum=hyper_params["momentum"],
-            max_depth=hyper_params["max_depth"], target_impurity=hyper_params["target_impurity"],
-            num_epochs=hyper_params["num_epochs"], learning_rate=hyper_params["learning_rate"],
-            reg=hyper_params["reg"], train=np.concatenate((x_train, y_train[:, np.newaxis]), axis=-1)
-        )
 
+        test = self.test.to_numpy()
+        x_test = test[:, :-1]
+        y_test = test[:, -1]
+        meta_tree = hyper_params["tree"]
         test_pred = [meta_tree.predict(features=x_test[i]) for i in range(len(x_test))]
         accuracy = accuracy_score(y_test, test_pred)
         return {
@@ -78,14 +75,15 @@ class tune_dodt:
         return {
             "accuracy": accuracy, "ff_dim": ff_dim, "momentum": momentum, "max_depth": max_depth,
             "target_impurity": target_impurity, "num_epochs": num_epochs, "learning_rate": learning_rate,
-            "reg": reg
+            "reg": reg, "tree": meta_tree
         }
+
 
 def main():
     df = pd.read_csv('./../../dataset/Wine_Quality_Data.csv')
     df = preprocess_wine_quality(df)
     train, test = train_test_split(df, test_size=0.5, random_state=42)
-    tuner = tune_dodt(train=train, test=test, label_col="quality")
+    tuner = TuneDODT(train=train, test=test, label_col="quality")
     start = time.time()
     result = tuner.tune(
         ff_dim_range=range(12, 30, 4),
@@ -105,4 +103,5 @@ def main():
 
 # Must include for multiprocess to work
 if __name__ == "__main__":
+    warnings.filterwarnings('ignore')
     main()
