@@ -81,7 +81,7 @@ import time
 
 
 def main():
-    df = preprocess_wine_quality()
+    df = preprocess_wine_quality(pd.read_csv("../../dataset/Wine_Quality_Data.csv"))
 
     train, test = train_test_split(df, test_size=0.5, random_state=42)
     tunner = Tune_Knn(train=train, test=test, label_col="quality")
@@ -90,6 +90,7 @@ def main():
     end = time.time()
     print(result)
     print(end - start)
+
 
 
 # Must include for multiprocess to work

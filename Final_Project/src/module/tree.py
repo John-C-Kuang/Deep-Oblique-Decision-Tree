@@ -1,21 +1,29 @@
 import numpy as np
 import pandas as pd
 
+import src.utils.ml_utils.metric
 from nn import FeedForward
-from typing import Union, Any
+from typing import Union, Any, Callable
+from collections import Counter
 
 
 class _DODTree:
 
-    def __init__(self, next: Union['_DODTree', None],
-                 perceptron: FeedForward = None):
+    def __init__(self, left: Union['_DODTree', None], right: Union['_DODTree', None],
+                 feedforward: FeedForward = None, cls: Any = None):
         """
         Deep Oblique Decision Tree. A variant of Oblique Decision Tree that utilizes
         concepts of deep learning.
-        @param next: the next layer of _DODTree
+        @param left: the left branch of _DODTree
+        @param right: the right branch of _DODTree
+        @param feedforward: internal feed forward network
+        @param cls: the class of the leaf
+        @return an instance of _DODTree
         """
-        self.next = next
-        self.perceptron = perceptron
+        self.left = left
+        self.right = right
+        self.feedforward = feedforward
+        self.cls = cls
 
     def predict(self, features: np.ndarray) -> Any:
         """
@@ -23,56 +31,80 @@ class _DODTree:
         @param features: the features to be classified
         @return: the predicted class of the features given
         """
-        prediction, new_features_or_result_class = self.perceptron.forward(features)
-        if prediction:
-            return new_features_or_result_class
-        return self.next.predict(new_features_or_result_class)
+        feature_vector = self.feedforward.forward(xs=features)
+        sigmoid = feature_vector[-1]
+        feature_vector = feature_vector[:-1]
+        if sigmoid >= 0.5:
+            return self.right.predict(feature_vector)
+        return self.left.predict(feature_vector)
 
     @classmethod
     def build_tree(cls,
                    train: Union[np.ndarray, None],
-                   class_order: list[int],
                    ff_dim: int,
                    num_epochs: int,
                    learning_rate: float,
-                   weight_scale: float = 1e-3,
-                   reg: float = 0.0
+                   momentum: float = 0.9,
+                   reg: float = 0.0,
+                   impurity_func: Callable = src.utils.ml_utils.metric.Entropy,
+                   target_impurity: float = 0.0,
                    ) -> '_DODTree':
         """
         Build an instance of the _DODTree.
+        @param target_impurity: impurity metric to stop recursion
         @param train: training data
         @param ff_dim: the dimension of the FeedForward output
         @param num_epochs: number since epochs for the perceptron in FeedForward
         @param learning_rate: learning rate of the perceptron
-        @param weight_scale: scale of the normal distribution for random initialization in FeedForward
+        @param momentum: scalar giving momentum strength for gradient descent
         @param reg: strength of the L2-Regularization.
+        @param impurity_func: inpurity measure functions
         @return: an instance of the _DODTree.
         """
+        class_order = cls.__get_class_order(train, -1)
+        if impurity_func(train) <= target_impurity:
+            return _DODTree(left=None, right=None, feedforward=None, cls=class_order[0])
 
-        # only one class left, stop splitting.
-        if len(class_order) == 1:
-            return _DODTree(next=None)
+        input_dim = train.shape[0] - 1
 
-        class_to_determine = class_order.pop(0)
-        rest_cls = class_order[0] if len(class_order) == 1 else None
+        feedforward = FeedForward(input_dim=input_dim, ff_dim=ff_dim, target_cls=class_order[0], reg=reg)
+        scores = feedforward.train(data=train, num_epochs=num_epochs, learning_rate=learning_rate, momentum=momentum)
+        sigmoid = scores[:, -1]
+        data = scores[:, :-1]
+        mask = sigmoid >= 0.5
 
-        perceptron = FeedForward(input_dim=train.size - 1, ff_dim=ff_dim,
-                                 weight_scale=weight_scale, reg=reg,
-                                 target_cls=class_to_determine, rest_cls=rest_cls)
-        new_train = perceptron.train(data=train, num_epochs=num_epochs, learning_rate=learning_rate)
-
-        # Left is classified
-        return _DODTree(
-            next=cls.build_tree(
-                train=new_train,
-                class_order=class_order,
-                ff_dim=ff_dim,
-                num_epochs=num_epochs,
-                learning_rate=learning_rate,
-                weight_scale=weight_scale,
-                reg=reg
-            )
+        left_branch = cls.build_tree(
+            train=data[~mask],
+            ff_dim=ff_dim,
+            num_epochs=num_epochs,
+            learning_rate=learning_rate,
+            momentum=momentum,
+            reg=reg,
+            impurity_func=impurity_func,
+            target_impurity=target_impurity
         )
+
+        right_branch = cls.build_tree(
+            train=data[mask],
+            ff_dim=ff_dim,
+            num_epochs=num_epochs,
+            learning_rate=learning_rate,
+            momentum=momentum,
+            reg=reg,
+            impurity_func=impurity_func,
+            target_impurity=target_impurity
+        )
+
+        return _DODTree(
+            left=left_branch,
+            right=right_branch,
+            feedforward=feedforward,
+            cls=None
+        )
+
+    @classmethod
+    def __get_class_order(cls, data: np.ndarray, label_index: int) -> tuple:
+        return Counter(data[:, label_index]).most_common(1)[0]
 
 
 class DODTree:
@@ -84,49 +116,31 @@ class DODTree:
         self.train_result = {}
         self.root = None
 
-    @staticmethod
-    def __determine_class_order(train: pd.DataFrame, label_col: str) -> list[int]:
-        """
-        Determine the order of classes for the nodes using the frequency of that class in the training data
-        @param train: training dataset to be split on.
-        @param label_col: name of the column containing the labels.
-        @return: a list of class ordered in decreasing frequency
-        """
-        cls_freq_df = train.groupby(label_col).size()
-        cls_freq_vals = cls_freq_df.values.tolist()
-        cls_freq_indices = cls_freq_df.index.tolist()
-        cls_freq_joint_list = [(cls_freq_indices[i], cls_freq_vals[i]) for i in range(len(cls_freq_indices))]
-        cls_freq_joint_list = sorted(cls_freq_joint_list, key=lambda pair: pair[1], reverse=True)
-        return [pair[0] for pair in cls_freq_joint_list]
-
     def train(self,
               train: Union[pd.DataFrame, np.ndarray],
-              label_col: str,
               ff_dim: int,
+              momentum: float,
               num_epochs: int = 1000,
               learning_rate: float = 0.001,
-              weight_scale: float = 1e-3,
               reg: float = 0.0):
         """
         Builds a complete DODTree with given hyperparameters.
 
+        @param momentum: scalar giving momentum strength for gradient descent
         @param train: training dataset to be split on.
-        @param label_col: name of the column containing the labels.
         @param ff_dim: integer dimension of the hidden layer.
         @param num_epochs: number of iteration to run until epoch for perceptron
         @param learning_rate: learning rate for perceptron
-        @param weight_scale: scale of the normal distribution for perceptron random initialization.
         @param reg: strength of the L2-Regularization in perceptron.
         @return: None
         """
-        class_order = DODTree.__determine_class_order(train, label_col)
-
         if isinstance(train, pd.DataFrame):
             train = train.to_numpy()
 
         self.root = _DODTree.build_tree(
-            train, class_order, ff_dim,
-            num_epochs, learning_rate, weight_scale, reg
+            train=train, ff_dim=ff_dim, num_epochs=num_epochs, learning_rate=learning_rate,
+            momentum=momentum, reg=reg, impurity_func=src.utils.ml_utils.Entropy,
+            target_impurity=0.0
         )
 
     def predict(self, features: np.ndarray) -> Any:
