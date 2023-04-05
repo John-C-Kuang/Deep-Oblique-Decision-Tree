@@ -255,38 +255,3 @@ class FeedForward:
             _, config_linear = self.linear.backward(dout, config_linear)
 
         return np.insert(self.forward(xs), -1, ys, axis=1)
-
-
-if __name__ == '__main__':
-    """
-    from collections import Counter
-    from dataset.preprocess import preprocess_wine_quality
-    from sklearn.metrics import accuracy_score
-
-    df = pd.read_csv('./../../dataset/Wine_Quality_Data.csv')
-    df = preprocess_wine_quality(df)
-    ff = FeedForward(12, 30, target_cls=6, reg=0.1)
-    print(Counter(df['quality']))
-    data = df.to_numpy()
-    ff.train(data, num_epochs=800, learning_rate=1e-6)
-    print(ff.history['loss'])
-    print(ff.history['accuracy'])
-    x = data[:, :-1]
-    y = data[:, -1]
-    score = (np.squeeze(ff(x)) >= 0.5).astype(int)
-    print(np.sum(score))
-    perceptron = Linear(12, 1, reg=0.3)
-    x = data[:, :-1]
-    y = data[:, -1]
-    gt = (y == 5).astype(int)
-    config_perceptron = {'momentum': 0.9, 'velocity': np.zeros((12, 1)),
-                         'learning_rate': 1e-6}
-    for _ in range(200):
-        y_pred = (np.sum(perceptron(x), axis=-1) >= 0).astype(int)
-        dout = (y_pred - gt)[:, np.newaxis]
-        _, config_perceptron = perceptron.backward(dout, config_perceptron)
-
-    pred = (np.sum(perceptron(x), axis=-1) >= 0).astype(int)
-    print(sum(pred))
-    print(accuracy_score(gt, pred))
-    """
