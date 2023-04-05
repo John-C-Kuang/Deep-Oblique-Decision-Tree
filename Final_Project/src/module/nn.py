@@ -133,7 +133,7 @@ class Sigmoid:
         return dout * self.cache * (1 - self.cache)
 
 
-class InverseNormalize:
+class Normalize:
     def __init__(self):
         pass
 
@@ -149,14 +149,14 @@ class InverseNormalize:
     @classmethod
     def forward(cls, xs: np.ndarray) -> np.ndarray:
         """
-        Inverse z-score normalize the given dataset.
+        Z-score normalize the given dataset.
 
         @param xs: the input batched feature vectors as 2d array.
         @return:
         """
         mean = np.mean(xs, axis=0)
         std = np.std(xs, axis=0)
-        out = (mean - xs) / std
+        out = (xs - mean) / std
         return out
 
 
