@@ -202,13 +202,12 @@ class FeedForward:
         @return: processed feature vectors
         """
         fc = self.linear(xs, auto_grad=False)
-        if train:
-            return fc
-
         relu = self.relu(fc, auto_grad=False)
         score = self.perceptron(relu, auto_grad=False)
         out = self.sigmoid(score, auto_grad=False)
 
+        if train:
+            return np.concatenate((fc, out), axis=-1)
         return out
 
     def train(self,
