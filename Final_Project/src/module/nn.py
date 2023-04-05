@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 
 # local
-from tqdm import tqdm
 
 
 class Linear:
@@ -233,7 +232,7 @@ class FeedForward:
         config_perceptron = {'momentum': momentum, 'velocity': np.zeros((self.ff_dim, 1)),
                              'learning_rate': learning_rate}
         gt_label = (ys == self.target_cls).astype(int)
-        for _ in tqdm(range(num_epochs), 'Training for {} epochs'.format(num_epochs)):
+        for _ in range(num_epochs):
             fc = self.linear(xs)
             relu = self.relu(fc)
             scores = self.perceptron(relu)
@@ -251,7 +250,7 @@ class FeedForward:
             dout = self.relu.backward(dout)
             _, config_linear = self.linear.backward(dout, config_linear)
 
-        return np.concatenate((self.forward(xs, train=True), ys[:, np.newaxis]), axis=-1)
+        return np.insert(self.forward(xs, train=True), -1, ys, axis=1)
 
 
 if __name__ == '__main__':
