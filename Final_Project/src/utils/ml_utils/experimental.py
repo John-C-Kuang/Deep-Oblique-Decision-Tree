@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 # local
-from utils import ml_utils
+from src.utils import ml_utils
 from collections import Counter
 from typing import Callable, Union, Any
 

@@ -1,8 +1,8 @@
 # global
-import utils
+import src.utils
 
 # local
-from utils.ml_utils import supported_frameworks
+from src.utils.ml_utils import supported_frameworks
 
 
 def set_framework(framework: str) -> None:
@@ -15,7 +15,7 @@ def set_framework(framework: str) -> None:
     key = framework.lower()
     if key not in supported_frameworks:
         raise RuntimeError('Given framework library unsupported')
-    utils.ml_utils.framework = supported_frameworks[key]
+    src.utils.ml_utils.framework = supported_frameworks[key]
 
 
 def numpy() -> None:
