@@ -45,7 +45,7 @@ class Tune_DTree:
 
         return y_actual, y_pred
 
-    # function for applying modals with different hyperparameters.
+    # function for applying modals with different hyper parameters.
     def apply_DTree(self,
                     train: pd.DataFrame,
                     validation: pd.DataFrame,
