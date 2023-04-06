@@ -58,7 +58,7 @@ class Tune_Knn:
         }
 
     def _batch_train_n_predict(self, k: int, random_state: int,
-                                distance_funcs: list[Callable]) -> (float, int, str):
+                               distance_funcs: list[Callable]) -> (float, int, str):
         ml_utils.numpy()
         for dist_func in distance_funcs:
             # could support other types if we really want to
@@ -79,7 +79,6 @@ from preprocess import preprocess_wine_quality
 import time
 
 
-
 def main():
     df = preprocess_wine_quality(pd.read_csv("../../dataset/Wine_Quality_Data.csv"))
 
@@ -90,7 +89,6 @@ def main():
     end = time.time()
     print(result)
     print(end - start)
-
 
 
 # Must include for multiprocess to work

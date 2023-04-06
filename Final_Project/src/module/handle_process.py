@@ -1,3 +1,5 @@
+import os
+import signal
 from multiprocessing import Process, Manager, BoundedSemaphore
 from typing import Callable, Any, Sequence
 
@@ -10,6 +12,9 @@ class multi_process_tuning:
         semaphore.acquire()
         records.append(task_function(*task_param))
         semaphore.release()
+        # guarantee kill process
+        pid = os.getpid()
+        os.kill(__pid=pid, __signal=signal.SIGKILL)
 
     @classmethod
     def tune(cls, task_function: Callable, tasks_param: list[Sequence[Any]],
