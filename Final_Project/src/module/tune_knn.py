@@ -39,14 +39,14 @@ class Tune_Knn:
                                     tasks_param=function_args, max_active_processes=processes)
         best_valid_hyper_params = max(validation_result, key=lambda data: data[0])
         # split test data into x_test and y_test
-        x_train, x_test, y_train, y_test = dp.partition_data(
-            df=self.test, label_col=self.label_col, test_set_prop=0.2, random_state=random_state
-        )
-
-        best_valid_knn = ml_utils.experimental.KNN()
-        best_valid_knn.train(feature_set=x_train.to_numpy(), labels=y_train.to_numpy())
+        # x_train, x_test, y_train, y_test = dp.partition_data(
+        #     df=self.test, label_col=self.label_col, test_set_prop=0.2, random_state=random_state
+        # )
+        x_test = self.test.to_numpy()[:, :-1]
+        y_test = self.test.to_numpy()[:, -1]
+        best_valid_knn = best_valid_hyper_params[3]
         # could make dist_func more flexible if want to
-        test_pred = [best_valid_knn.predict(feature=x_test.iloc[i].to_numpy(), k=best_valid_hyper_params[1],
+        test_pred = [best_valid_knn.predict(feature=x_test[i], k=best_valid_hyper_params[1],
                                             dist_func=src.utils.ml_utils.metric.CosineSimilarity) for i in
                      range(x_test.shape[0])]
         test_accuracy = accuracy_score(y_test, test_pred)
@@ -71,7 +71,7 @@ class Tune_Knn:
             valid_pred = [knn.predict(feature=x_valid.iloc[i].to_numpy(), k=k, dist_func=dist)
                           for i in range(x_valid.shape[0])]
             accuracy = accuracy_score(y_valid, valid_pred)
-            return accuracy, k, dist_func
+            return accuracy, k, dist_func, knn
 
 
 from sklearn.model_selection import train_test_split
