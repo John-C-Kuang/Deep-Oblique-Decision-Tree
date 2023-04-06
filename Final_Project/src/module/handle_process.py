@@ -14,7 +14,7 @@ class multi_process_tuning:
         semaphore.release()
         # guarantee kill process
         pid = os.getpid()
-        os.kill(__pid=pid, __signal=signal.SIGKILL)
+        os.kill(pid, signal.SIGKILL)
 
     @classmethod
     def tune(cls, task_function: Callable, tasks_param: list[Sequence[Any]],
