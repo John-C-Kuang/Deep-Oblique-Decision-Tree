@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from src.module.preprocess import preprocess_wine_quality
-from src.module.tune_dTree import predict_data
 from src.utils import ml_utils
 from itertools import product
 from handle_process import multi_process_tuning as tn
@@ -29,6 +28,15 @@ def n_folds(folds, train):
         train_fold = train[train.index % folds != f]
         valid_fold = train[train.index % folds == f]
     return train_fold, valid_fold
+
+
+def predict_data(self, data, tree):
+    # given a subset dataframe as test data, predict its output alongside with its original answer
+    y_actual = data[self.label_col].to_numpy()
+    # apply decision tree prediction to each of the row
+    y_pred = data.apply(lambda row: tree.predict(row), axis=1).to_numpy()
+
+    return y_actual, y_pred
 
 
 class Tune_DTree:
