@@ -30,15 +30,6 @@ def n_folds(folds, train):
     return train_fold, valid_fold
 
 
-def predict_data(self, data, tree):
-    # given a subset dataframe as test data, predict its output alongside with its original answer
-    y_actual = data[self.label_col].to_numpy()
-    # apply decision tree prediction to each of the row
-    y_pred = data.apply(lambda row: tree.predict(row), axis=1).to_numpy()
-
-    return y_actual, y_pred
-
-
 class Tune_DTree:
     def __init__(self, train: pd.DataFrame, test: pd.DataFrame, label_col: str):
         self.train = train
@@ -91,7 +82,7 @@ class Tune_DTree:
         if valid_fold is not None:
             validation_accuracy = calc_accuracy(*self.predict_data(valid_fold, tree))
         if test is not None:
-            test_accuracy = calc_accuracy(*predict_data(test, tree))
+            test_accuracy = calc_accuracy(*self.predict_data(test, tree))
 
         print("finish one term")
         return {'impurity_func': impurity_func, 'max_depth': max_depth, 'min_instances': min_instances,
