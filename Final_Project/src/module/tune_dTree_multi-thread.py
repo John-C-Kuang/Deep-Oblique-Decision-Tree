@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from src.module.preprocess import preprocess_wine_quality
+from src.module.tune_dTree import predict_data
 from src.utils import ml_utils
 from itertools import product
 from handle_process import multi_process_tuning as tn
@@ -49,7 +50,7 @@ class Tune_DTree:
 
         return y_actual, y_pred
 
-    def tune(self, processes: int = 4) -> dict:
+    def tune(self, max_depth, processes: int = 4) -> dict:
         train_fold, valid_fold = n_folds(10, self.train)
 
         impurity_funcs = ['entropy', 'gini']
@@ -57,7 +58,8 @@ class Tune_DTree:
         for min_instances, target_impurity, impurity_func in product(range(2, 12, 2),
                                                                      np.arange(0, 0.2, 0.05),
                                                                      impurity_funcs):
-            function_args.append([train_fold, valid_fold, impurity_func, 5, min_instances, target_impurity])
+            function_args.append(
+                [train_fold, valid_fold, impurity_func, max_depth, min_instances, target_impurity, self.test])
 
         print("There are ", len(function_args), " instances.")
 
@@ -68,10 +70,10 @@ class Tune_DTree:
         return hyper_params
 
     def _batch_train_n_predict(self, train_fold, valid_fold, impurity_func, max_depth, min_instances,
-                               target_impurity) -> dict:
+                               target_impurity, test) -> dict:
         impurity_func = ml_utils.metric.entropy if impurity_func == 'entropy' else ml_utils.metric.gini
         tree = ml_utils.experimental.DecisionTree(discrete_threshold=10,
-                                                  max_depth=5,
+                                                  max_depth=max_depth,
                                                   min_instances=min_instances,
                                                   target_impurity=target_impurity,
                                                   impurity_func=impurity_func)
@@ -80,6 +82,8 @@ class Tune_DTree:
         test_accuracy = 'N/A'
         if valid_fold is not None:
             validation_accuracy = calc_accuracy(*self.predict_data(valid_fold, tree))
+        if test is not None:
+            test_accuracy = calc_accuracy(*predict_data(test, tree))
 
         print("finish one term")
         return {'impurity_func': impurity_func, 'max_depth': max_depth, 'min_instances': min_instances,
@@ -93,7 +97,7 @@ def main():
     train, test = train_test_split(df, test_size=0.5, random_state=42)
     tunner = Tune_DTree(train=train, test=test, label_col="quality")
     start = time.time()
-    result = tunner.tune()
+    result = tunner.tune(5)
     end = time.time()
     print(result)
     print("Time(sec): ")

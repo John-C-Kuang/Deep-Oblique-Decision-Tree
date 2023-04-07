@@ -99,7 +99,7 @@ class Tune_DTree:
                 records = pd.concat([records, pd.DataFrame(row, index=[len(records)])])
             except Exception as e:
                 print('Failed with: impurity_func: {}, max_depth: {}, min_instances: {}, target_impurity: {}'.format(
-                    impurity_func, max_depth, min_instances, target_impurity))
+                    impurity_func, 5, min_instances, target_impurity))
                 print(e)
         return records
 
