@@ -1,5 +1,8 @@
 import time
 
+from sklearn.metrics import accuracy_score
+
+import data_partition as dp
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -50,15 +53,12 @@ class Tune_DTree:
         return y_actual, y_pred
 
     def tune(self, max_depth, processes: int = 4) -> dict:
-        train_fold, valid_fold = n_folds(10, self.train)
-
         impurity_funcs = ['entropy', 'gini']
         function_args = []
         for min_instances, target_impurity, impurity_func in product(range(2, 12, 2),
                                                                      np.arange(0, 0.2, 0.05),
                                                                      impurity_funcs):
-            function_args.append(
-                [train_fold, valid_fold, impurity_func, max_depth, min_instances, target_impurity, self.test])
+            function_args.append([impurity_func, max_depth, min_instances, target_impurity, self.test])
 
         print("There are ", len(function_args), " instances.")
 
@@ -68,8 +68,14 @@ class Tune_DTree:
 
         return hyper_params
 
-    def _batch_train_n_predict(self, train_fold, valid_fold, impurity_func, max_depth, min_instances,
-                               target_impurity, test) -> dict:
+    def _batch_train_n_predict(self, impurity_func, max_depth, min_instances,
+                               target_impurity, test, random_state: int = 42) -> dict:
+        x_train, x_valid, y_train, y_valid = dp.partition_data(
+            df=self.train, label_col=self.label_col, test_set_prop=0.2, random_state=random_state
+        )
+
+        train_fold = pd.concat([x_train, y_train.T], axis=1)
+
         impurity_func = ml_utils.metric.entropy if impurity_func == 'entropy' else ml_utils.metric.gini
         tree = ml_utils.experimental.DecisionTree(discrete_threshold=10,
                                                   max_depth=max_depth,
@@ -77,17 +83,15 @@ class Tune_DTree:
                                                   target_impurity=target_impurity,
                                                   impurity_func=impurity_func)
         tree.train(train_fold, self.label_col)
-        validation_accuracy = 'N/A'
-        test_accuracy = 'N/A'
-        if valid_fold is not None:
-            validation_accuracy = calc_accuracy(*self.predict_data(valid_fold, tree))
-        if test is not None:
-            test_accuracy = calc_accuracy(*self.predict_data(test, tree))
+        valid_fold = pd.concat([x_valid, y_valid.T], axis=1)
+        validation_accuracy = calc_accuracy(*self.predict_data(valid_fold, tree))
+        test_accuracy = calc_accuracy(*self.predict_data(test, tree))
 
-        print("finish one term")
-        return {'impurity_func': impurity_func, 'max_depth': max_depth, 'min_instances': min_instances,
-                'target_impurity': target_impurity, 'validation_accuracy': validation_accuracy,
-                'test_accuracy': test_accuracy}
+        print("Process Finished.")
+        row = {'impurity_func': impurity_func, 'max_depth': max_depth, 'min_instances': min_instances,
+               'target_impurity': target_impurity, 'validation_accuracy': validation_accuracy,
+               'test accuracy': test_accuracy}
+        return row
 
 
 def main():
