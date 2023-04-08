@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from src.module.preprocess import preprocess_wine_quality
 from src.utils import ml_utils
 from itertools import product
-from handle_process import multi_process_tuning as tn
+from multi_process import multi_process_tuning as tn
 
 
 def calc_accuracy(y_pred, y_actual):
