@@ -28,12 +28,12 @@ class TuneDODT:
         ml_utils.numpy()
 
     def tune(self, ff_dim_range: range, momentum_range: list, max_depth_range: range,
-             target_impurity_range: list, num_epochs_range: range, learning_rate_range: list,
+             target_impurity_range: list, num_epochs_range: list, learning_rate_range: list,
              reg_range: list, processes: int, random_state: int = 42) -> dict:
         combinations = list(product(
             ff_dim_range, momentum_range, max_depth_range, target_impurity_range,
             num_epochs_range, learning_rate_range, reg_range))
-        validation_result = tn.tune(task_function=self._batch_train_n_predict,
+        validation_result = tn.tune(task_function=self.batch_train_n_predict,
                                     tasks_param=combinations, max_active_processes=processes)
         hyper_params = max(validation_result, key=lambda data: data["accuracy"])
 
@@ -50,17 +50,21 @@ class TuneDODT:
             "learning_rate": hyper_params["learning_rate"], "reg": hyper_params["reg"]
         }
 
-    def _batch_train_n_predict(
+    def batch_train_n_predict(
             self, ff_dim: int, momentum: float, max_depth: int, target_impurity: float, num_epochs: int = 1000,
             learning_rate: float = 0.001, reg: float = 0.0, random_state: int = 42) -> dict:
         x_train, x_valid, y_train, y_valid = dp.partition_data(
             df=self.train, label_col=self.label_col, test_set_prop=0.2, random_state=random_state
         )
         # convert to ndarray
-        x_train = x_train.to_numpy()
-        x_valid = x_valid.to_numpy()
-        y_train = y_train.to_numpy()
-        y_valid = y_valid.to_numpy()
+        x_train = self.train.to_numpy()[:, :-1]
+        # x_train = x_train.to_numpy()
+        x_valid = self.train.to_numpy()[:, :-1]
+        # x_valid = x_valid.to_numpy()
+        y_train = self.train.to_numpy()[:, -1]
+        # y_train = y_train.to_numpy()
+        y_valid = self.train.to_numpy()[:, -1]
+        # y_valid = y_valid.to_numpy()
 
         meta_tree = DODTree()
         meta_tree.train(
@@ -80,6 +84,7 @@ class TuneDODT:
 
 
 def main():
+    warnings.filterwarnings('ignore')
     df = pd.read_csv('./../../dataset/Wine_Quality_Data.csv')
     df = preprocess_wine_quality(df)
     train, test = train_test_split(df, test_size=0.5, random_state=42)
@@ -87,21 +92,25 @@ def main():
     start = time.time()
     result = tuner.tune(
         ff_dim_range=range(12, 30, 4),
-        momentum_range=[0.7, 0.8, 0.9],
+        momentum_range=[0.9],
         max_depth_range=range(15, 25, 3),
         target_impurity_range=[0, 0.1, 0.2],
-        num_epochs_range=range(200, 600, 200),
+        num_epochs_range=[500],
         learning_rate_range=[1e-5, 1e-6],
         reg_range=[0, 0.1, 0.2],
         processes=5
     )
     end = time.time()
     print(result)
-    print("Time(sec): ")
+    print("Time(sec): ", end='')
     print(end - start)
 
 
 # Must include for multiprocess to work
 if __name__ == "__main__":
-    warnings.filterwarnings('ignore')
-    main()
+    # main()
+    df = pd.read_csv('./../../dataset/Wine_Quality_Data.csv')
+    df = preprocess_wine_quality(df)
+    train, test = train_test_split(df, test_size=0.5, random_state=42)
+    tuner = TuneDODT(train=train, test=test, label_col="quality")
+    print(tuner.batch_train_n_predict(12, 0.9, 15, 0.1, 500, 1e-6, 0.01))
