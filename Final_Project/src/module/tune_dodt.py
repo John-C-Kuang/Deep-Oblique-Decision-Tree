@@ -3,7 +3,7 @@ import numpy as np
 import data_partition as dp
 import time
 from sklearn.model_selection import train_test_split
-from handle_process import multi_process_tuning as tn
+from multi_process import multi_process_tuning as tn
 from preprocess import preprocess_wine_quality
 from itertools import product
 from sklearn.metrics import accuracy_score
