@@ -1,7 +1,7 @@
 import pandas as pd
 import data_partition as dp
 import src.utils.ml_utils.metric
-from handle_process import multi_process_tuning as tn
+from multi_process import multi_process_tuning as tn
 from sklearn.metrics import accuracy_score
 from src.utils import ml_utils
 from typing import Callable
@@ -38,14 +38,10 @@ class Tune_Knn:
         validation_result = tn.tune(task_function=self._batch_train_n_predict,
                                     tasks_param=function_args, max_active_processes=processes)
         best_valid_hyper_params = max(validation_result, key=lambda data: data[0])
-        # split test data into x_test and y_test
-        # x_train, x_test, y_train, y_test = dp.partition_data(
-        #     df=self.test, label_col=self.label_col, test_set_prop=0.2, random_state=random_state
-        # )
+
         x_test = self.test.to_numpy()[:, :-1]
         y_test = self.test.to_numpy()[:, -1]
         best_valid_knn = best_valid_hyper_params[3]
-        # could make dist_func more flexible if want to
         test_pred = [best_valid_knn.predict(feature=x_test[i], k=best_valid_hyper_params[1],
                                             dist_func=src.utils.ml_utils.metric.CosineSimilarity) for i in
                      range(x_test.shape[0])]
@@ -82,14 +78,13 @@ import time
 def main():
     df = preprocess_wine_quality(pd.read_csv("../../dataset/Wine_Quality_Data.csv"))
 
-    train, test = train_test_split(df, test_size=0.5, random_state=42)
+    train, test = train_test_split(df, test_size=0.3, random_state=42)
     tunner = Tune_Knn(train=train, test=test, label_col="quality")
     start = time.time()
-    result = tunner.tune(10, ["cos_sim"], 42, 5)
+    result = tunner.tune(100, ["cos_sim"], 42, 5)
     end = time.time()
     print(result)
     print(end - start)
-
 
 # Must include for multiprocess to work
 if __name__ == "__main__":
