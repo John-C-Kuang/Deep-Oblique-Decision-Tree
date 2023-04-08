@@ -113,4 +113,4 @@ if __name__ == "__main__":
     df = preprocess_wine_quality(df)
     train, test = train_test_split(df, test_size=0.3, random_state=42)
     tuner = TuneDODT(train=train, test=test, label_col="quality")
-    print(tuner.batch_train_n_predict(12, 0.9, 15, 0.1, 500, 1e-6, 0.01))
+    print(tuner.batch_train_n_predict(15, 0.9, 15, 0.1, 500, 1e-6, 0.1))
