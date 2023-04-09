@@ -1,7 +1,5 @@
 import time
 
-from sklearn.metrics import accuracy_score
-
 import data_partition as dp
 import numpy as np
 import pandas as pd
