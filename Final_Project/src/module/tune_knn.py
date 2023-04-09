@@ -86,6 +86,6 @@ def main():
     print(result)
     print(end - start)
 
-# Must include for multiprocess to work
+# Must include for multi-process to work
 if __name__ == "__main__":
     main()
